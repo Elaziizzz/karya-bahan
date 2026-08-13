@@ -1,34 +1,17 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { clearStore } from '@/app/actions/auth';
 
 export async function Sidebar() {
-  const cookieStore = await cookies();
-  const activeStore = cookieStore.get('store')?.value;
-  const storeName = activeStore === 'bysca' ? 'BYSCA (Parfum)' : 'Karya Bahan';
-
   return (
     <aside className="w-64 min-h-screen border-r border-black flex flex-col justify-between bg-white relative">
       <div className="p-8 pb-4">
-        {activeStore ? (
-          <div className="mb-8 border-b-4 border-black pb-4">
-            <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words">
-              {activeStore === 'bysca' ? 'BYSCA' : 'KARYA BAHAN'}
-            </h1>
-            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              {activeStore === 'bysca' ? 'Toko Parfum' : 'Toko Material'}
-            </div>
-            <form action={clearStore}>
-              <button type="submit" className="text-xs underline text-blue-600 font-bold hover:text-blue-800">
-                Ganti Toko &rarr;
-              </button>
-            </form>
-          </div>
-        ) : (
-          <h1 className="text-3xl font-black tracking-tighter mb-8 uppercase leading-none">
-            APP
+        <div className="mb-8 border-b-4 border-black pb-4">
+          <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words">
+            KARYA BAHAN
           </h1>
-        )}
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+            Toko Material & Bangunan
+          </div>
+        </div>
 
         <nav className="flex flex-col gap-4">
           <Link href="/" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">

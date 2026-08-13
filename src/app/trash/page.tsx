@@ -5,14 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { format, differenceInDays } from "date-fns";
 import { Trash2, RefreshCcw, AlertTriangle } from "lucide-react";
 
-// Helper function to read cookie on client side safely
-function getCookie(name: string) {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return null;
-}
+// Removed getCookie
 
 type Transaction = {
   id: string;
@@ -30,12 +23,10 @@ type Transaction = {
 export default function TrashPage() {
   const [trashed, setTrashed] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeStore, setActiveStore] = useState("");
+  const [activeStore] = useState("karya_bahan");
 
   useEffect(() => {
-    const store = getCookie("store") || "karya_bahan";
-    setActiveStore(store);
-    fetchAndCleanTrash(store);
+    fetchAndCleanTrash("karya_bahan");
   }, []);
 
   async function fetchAndCleanTrash(store: string) {

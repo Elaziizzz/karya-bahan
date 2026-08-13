@@ -8,14 +8,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-// Helper function to read cookie on client side safely
-function getCookie(name: string) {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-  return null;
-}
+// Removed getCookie
 
 type Transaction = {
   id: string;
@@ -44,16 +37,14 @@ export default function ReportsPage() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeStore, setActiveStore] = useState("");
+  const [activeStore] = useState("karya_bahan");
   
   // Filter state
   const [selectedFilter, setSelectedFilter] = useState<string>("TODAY");
   const [customDate, setCustomDate] = useState<string>("");
 
   useEffect(() => {
-    const store = getCookie("store") || "karya_bahan";
-    setActiveStore(store);
-    fetchData(store);
+    fetchData("karya_bahan");
   }, []);
 
   async function fetchData(store: string) {
