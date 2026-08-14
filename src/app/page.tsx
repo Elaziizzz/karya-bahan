@@ -11,6 +11,7 @@ type Material = {
   current_stock: number;
   cost_price: number;
   price: number;
+  code?: string;
 };
 
 type Transaction = {
@@ -42,6 +43,8 @@ export default function POSDashboard() {
   const [tempBudget, setTempBudget] = useState("");
   const [activeStore] = useState<string>("karya_bahan");
   const [transactionDate, setTransactionDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchData("karya_bahan");
@@ -118,6 +121,11 @@ export default function POSDashboard() {
     if (all) setAllTransactions(all as Transaction[]);
   }
 
+  const filteredMaterials = materials.filter(m => 
+    m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (m.code && m.code.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId);
   const calculatedPrice = selectedMaterial ? selectedMaterial.price * Number(quantity || 0) : 0;
   
@@ -162,6 +170,7 @@ export default function POSDashboard() {
     setLoading(false);
     if (!error) {
       setSelectedMaterialId("");
+      setSearchQuery("");
       setQuantity("");
       setCustomPrice("");
     } else {
@@ -299,21 +308,52 @@ export default function POSDashboard() {
               </label>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold mb-2 uppercase">Material</label>
-              <select
-                className="w-full border border-black p-3 bg-transparent appearance-none focus:outline-none focus:ring-1 focus:ring-black"
-                value={selectedMaterialId}
-                onChange={(e) => setSelectedMaterialId(e.target.value)}
-                required
+            <div className="relative">
+              <label className="block text-sm font-bold mb-2 uppercase">Material / Kode Barang</label>
+              <div 
+                className="w-full border border-black bg-white flex items-center relative"
               >
-                <option value="" disabled>Select material...</option>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id} disabled={transactionType === 'OUT' && m.current_stock <= 0}>
-                    {m.name} (Stock: {m.current_stock})
-                  </option>
-                ))}
-              </select>
+                <input
+                  type="text"
+                  className="w-full p-3 bg-transparent focus:outline-none focus:ring-1 focus:ring-black"
+                  placeholder="Ketik nama atau kode barang..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsDropdownOpen(true);
+                    if (selectedMaterialId) setSelectedMaterialId(""); // Clear selection if typing
+                  }}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                />
+              </div>
+
+              {isDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-black shadow-lg max-h-60 overflow-y-auto">
+                  {filteredMaterials.length === 0 ? (
+                    <div className="p-3 text-gray-500 text-sm">Tidak ditemukan...</div>
+                  ) : (
+                    filteredMaterials.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`p-3 cursor-pointer border-b border-gray-100 hover:bg-gray-100 flex justify-between items-center ${transactionType === 'OUT' && m.current_stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''} ${selectedMaterialId === m.id ? 'bg-gray-200 font-bold' : ''}`}
+                        onClick={() => {
+                          if (transactionType === 'OUT' && m.current_stock <= 0) return;
+                          setSelectedMaterialId(m.id);
+                          setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <div>
+                          {m.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-gray-300">{m.code}</span>}
+                          <span>{m.name}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">Stock: {m.current_stock}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -453,3 +493,4 @@ export default function POSDashboard() {
     </div>
   );
 }
+

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Package, Plus, Trash2, Edit2, Check, X } from "lucide-react";
 
+// Removed getCookie
+
 type Material = {
   id: string;
   name: string;
@@ -11,6 +13,7 @@ type Material = {
   cost_price: number;
   price: number;
   store: string;
+  code?: string;
 };
 
 export default function MaterialsPage() {
@@ -20,6 +23,7 @@ export default function MaterialsPage() {
 
   // Form states for creating a new material
   const [newName, setNewName] = useState("");
+  const [newCode, setNewCode] = useState("");
   const [newStock, setNewStock] = useState("");
   const [newCostPrice, setNewCostPrice] = useState("");
   const [newPrice, setNewPrice] = useState("");
@@ -27,6 +31,7 @@ export default function MaterialsPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editCode, setEditCode] = useState("");
   const [editCostPrice, setEditCostPrice] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editStock, setEditStock] = useState("");
@@ -54,6 +59,7 @@ export default function MaterialsPage() {
     const { error } = await supabase.from("materials").insert([
       { 
         name: newName, 
+        code: newCode || null,
         current_stock: Number(newStock), 
         cost_price: Number(newCostPrice),
         price: Number(newPrice),
@@ -64,6 +70,7 @@ export default function MaterialsPage() {
     setIsCreating(false);
     if (!error) {
       setNewName("");
+      setNewCode("");
       setNewStock("");
       setNewCostPrice("");
       setNewPrice("");
@@ -89,6 +96,7 @@ export default function MaterialsPage() {
   function startEditing(m: Material) {
     setEditingId(m.id);
     setEditName(m.name);
+    setEditCode(m.code || "");
     setEditCostPrice(String(m.cost_price));
     setEditPrice(String(m.price));
     setEditStock(String(m.current_stock));
@@ -103,7 +111,7 @@ export default function MaterialsPage() {
 
     const { error } = await supabase
       .from("materials")
-      .update({ name: editName, cost_price: Number(editCostPrice), price: Number(editPrice), current_stock: Number(editStock) })
+      .update({ name: editName, code: editCode || null, cost_price: Number(editCostPrice), price: Number(editPrice), current_stock: Number(editStock) })
       .eq("id", id);
 
     if (!error) {
@@ -138,6 +146,16 @@ export default function MaterialsPage() {
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Semen Putih 40kg"
               required
+            />
+          </div>
+          <div className="w-full md:w-32">
+            <label className="block text-sm font-bold mb-1 uppercase">Kode Barang</label>
+            <input
+              type="text"
+              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black uppercase"
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value)}
+              placeholder="e.g. SMN-01"
             />
           </div>
           <div className="w-full md:w-32">
@@ -192,6 +210,7 @@ export default function MaterialsPage() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="bg-black text-white uppercase tracking-wide text-xs">
+                <th className="p-4 font-bold border-r border-gray-700">Kode</th>
                 <th className="p-4 font-bold border-r border-gray-700">Nama Barang</th>
                 <th className="p-4 font-bold border-r border-gray-700 text-right">Stok</th>
                 <th className="p-4 font-bold border-r border-gray-700 text-right">H. Modal (Rp)</th>
@@ -208,11 +227,23 @@ export default function MaterialsPage() {
                 </tr>
               ) : materials.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-gray-500 italic">No materials found.</td>
+                  <td colSpan={5} className="p-8 text-center text-gray-500 italic">No materials found.</td>
                 </tr>
               ) : (
                 materials.map((m) => (
                   <tr key={m.id} className="border-b border-black last:border-b-0 hover:bg-gray-50">
+                    <td className="p-4 border-r border-black font-mono">
+                      {editingId === m.id ? (
+                        <input
+                          type="text"
+                          className="w-full border border-black p-1 focus:outline-none focus:ring-1 focus:ring-black uppercase"
+                          value={editCode}
+                          onChange={(e) => setEditCode(e.target.value)}
+                        />
+                      ) : (
+                        m.code || "-"
+                      )}
+                    </td>
                     <td className="p-4 border-r border-black">
                       {editingId === m.id ? (
                         <input
@@ -298,3 +329,4 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
