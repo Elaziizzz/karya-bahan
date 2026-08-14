@@ -6,8 +6,8 @@ import { format } from "date-fns";
 import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
-
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 // Removed getCookie
 
 type Transaction = {
@@ -211,31 +211,88 @@ export default function ReportsPage() {
     doc.save(`Laporan_PnL_${activeStore}_${selectedFilter.replace(' ', '_')}.pdf`);
   };
 
-  const exportExcel = () => {
-    const worksheetData: any[] = filteredTransactions.map(t => {
-      const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
-      return {
-        "Tanggal": format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss"),
-        "Tipe": t.type === 'IN' ? 'BELI (IN)' : 'JUAL (OUT)',
-        "Material": t.materials?.name || "Unknown",
-        "Quantity": t.quantity,
-        "H. Modal/Pcs (Rp)": t.type === 'IN' ? t.total_price / (t.quantity || 1) : (t.cost_price || 0),
-        "H. Jual/Pcs (Rp)": t.type === 'OUT' ? t.total_price / (t.quantity || 1) : "-",
-        "Total Transaksi (Rp)": t.type === 'IN' ? -t.total_price : t.total_price,
-        "Profit (Rp)": profit
-      };
+  const exportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Laporan PnL");
+
+    // Define columns
+    sheet.columns = [
+      { header: "Tanggal", key: "date", width: 22 },
+      { header: "Tipe", key: "type", width: 15 },
+      { header: "Material", key: "material", width: 30 },
+      { header: "Quantity", key: "qty", width: 12 },
+      { header: "H. Modal/Pcs (Rp)", key: "modal", width: 20 },
+      { header: "H. Jual/Pcs (Rp)", key: "jual", width: 20 },
+      { header: "Total Transaksi (Rp)", key: "total", width: 22 },
+      { header: "Profit (Rp)", key: "profit", width: 18 }
+    ];
+
+    // Style header row
+    const headerRow = sheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FF000000" } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
 
-    // Add Total rows
-    worksheetData.push({ "Tanggal": "", "Tipe": "", "Material": "", "Quantity": "TOTAL JUAL", "H. Modal/Pcs (Rp)": "", "H. Jual/Pcs (Rp)": "", "Total Transaksi (Rp)": totalSalesRevenue as any, "Profit (Rp)": "" });
-    worksheetData.push({ "Tanggal": "", "Tipe": "", "Material": "", "Quantity": "MODAL KELUAR", "H. Modal/Pcs (Rp)": "", "H. Jual/Pcs (Rp)": "", "Total Transaksi (Rp)": -costRecovered as any, "Profit (Rp)": "" });
-    worksheetData.push({ "Tanggal": "", "Tipe": "", "Material": "", "Quantity": "PROFIT BERSIH", "H. Modal/Pcs (Rp)": "", "H. Jual/Pcs (Rp)": "", "Total Transaksi (Rp)": "", "Profit (Rp)": realizedProfit as any });
+    filteredTransactions.forEach(t => {
+      const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
+      const isBeli = t.type === 'IN';
+      
+      const row = sheet.addRow({
+        date: format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss"),
+        type: isBeli ? 'BELI (IN)' : 'JUAL (OUT)',
+        material: t.materials?.name || "Unknown",
+        qty: t.quantity,
+        modal: isBeli ? t.total_price / (t.quantity || 1) : (t.cost_price || 0),
+        jual: isBeli ? "-" : t.total_price / (t.quantity || 1),
+        total: isBeli ? -t.total_price : t.total_price,
+        profit: isBeli ? "-" : profit
+      });
 
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan PnL");
-    
-    XLSX.writeFile(workbook, `Laporan_PnL_${activeStore}_${selectedFilter.replace(' ', '_')}.xlsx`);
+      // Styling based on type
+      row.getCell("type").font = { color: { argb: isBeli ? "FF990000" : "FF006600" }, bold: true };
+      
+      // Values formatting
+      row.getCell("total").font = { color: { argb: isBeli ? "FFCC0000" : "FF0000FF" }, bold: true };
+      if (!isBeli) row.getCell("profit").font = { color: { argb: "FF009900" }, bold: true };
+
+      // Number formatting for currency columns
+      ['modal', 'jual', 'total', 'profit'].forEach(key => {
+        const cell = row.getCell(key);
+        if (typeof cell.value === 'number') {
+          cell.numFmt = '#,##0';
+        }
+      });
+    });
+
+    // Add empty row for spacing
+    sheet.addRow({});
+
+    // Totals Section
+    const totalSalesRow = sheet.addRow({ qty: "TOTAL PENJUALAN", total: totalSalesRevenue });
+    totalSalesRow.getCell("qty").font = { bold: true };
+    totalSalesRow.getCell("total").font = { bold: true, color: { argb: "FF0000FF" } };
+    totalSalesRow.getCell("total").numFmt = '#,##0';
+
+    const modalKeluarRow = sheet.addRow({ qty: "MODAL KELUAR", total: -costRecovered });
+    modalKeluarRow.getCell("qty").font = { bold: true };
+    modalKeluarRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
+    modalKeluarRow.getCell("total").numFmt = '#,##0';
+
+    const profitRow = sheet.addRow({ qty: "PROFIT BERSIH", profit: realizedProfit });
+    profitRow.getCell("qty").font = { bold: true };
+    profitRow.getCell("profit").font = { bold: true, color: { argb: "FF009900" } };
+    profitRow.getCell("profit").numFmt = '#,##0';
+
+    const totalBeliRow = sheet.addRow({ qty: "TOTAL PEMBELIAN", total: -totalPurchaseCost });
+    totalBeliRow.getCell("qty").font = { bold: true };
+    totalBeliRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
+    totalBeliRow.getCell("total").numFmt = '#,##0';
+
+    // Generate and save
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Laporan_PnL_${activeStore}_${selectedFilter.replace(' ', '_')}.xlsx`);
   };
 
   return (
