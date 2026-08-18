@@ -20,6 +20,9 @@ export async function Sidebar() {
           <Link href="/materials" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
             Inventory / Materials
           </Link>
+          <Link href="/smart-import" className="text-lg font-medium hover:underline underline-offset-4 decoration-2 text-blue-600 flex items-center gap-2">
+            ✨ Smart Import
+          </Link>
           <Link href="/reports" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
             Reports
           </Link>
