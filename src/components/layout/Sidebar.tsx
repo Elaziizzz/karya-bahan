@@ -24,10 +24,10 @@ export function Sidebar() {
 
         <nav className="flex flex-col gap-2">
           <Link href="/" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/')}`}>
-            Kasir (POS)
+            Kasir
           </Link>
           <Link href="/restock" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/restock')}`}>
-            Restock / Kulakan
+            Restock
           </Link>
           <Link href="/materials" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/materials')}`}>
             Inventory
