@@ -88,7 +88,7 @@ export default function TrashPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-fade-in">
       <div className="flex items-center gap-3 border-b-2 border-red-600 pb-4 text-red-600">
         <Trash2 className="w-8 h-8" />
         <h1 className="text-3xl font-bold uppercase tracking-tighter">Tong Sampah</h1>
@@ -132,7 +132,7 @@ export default function TrashPage() {
                   const daysLeft = 10 - differenceInDays(new Date(), deletedDate);
                   
                   return (
-                    <tr key={t.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <tr key={t.id} className="border-b border-gray-200 hover:bg-red-50 transition-swiss group">
                       <td className="p-4">
                         <div className="font-bold">{format(deletedDate, "dd MMM yyyy")}</div>
                         <div className="text-xs text-red-500 mt-1">Hilang permanen dalam {daysLeft} hari</div>
@@ -143,16 +143,16 @@ export default function TrashPage() {
                           {t.type === 'IN' ? 'BELI' : 'JUAL'} {t.quantity} unit | Rp {t.total_price.toLocaleString("id-ID")}
                         </div>
                       </td>
-                      <td className="p-4 text-right space-x-2">
+                      <td className="p-4 text-right space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => handleRestore(t.id)}
-                          className="bg-black text-white px-3 py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors inline-flex items-center gap-1"
+                          className="bg-black text-white px-3 py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-swiss active-press inline-flex items-center gap-1"
                         >
                           <RefreshCcw className="w-3 h-3" /> Restore
                         </button>
                         <button 
                           onClick={() => handleHardDelete(t.id)}
-                          className="bg-red-600 text-white px-3 py-2 text-xs font-bold uppercase hover:bg-red-800 transition-colors inline-flex items-center gap-1"
+                          className="bg-red-600 text-white px-3 py-2 text-xs font-bold uppercase hover:bg-red-800 transition-swiss active-press inline-flex items-center gap-1"
                         >
                           <Trash2 className="w-3 h-3" /> Hapus Permanen
                         </button>

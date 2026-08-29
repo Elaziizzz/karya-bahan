@@ -1,35 +1,42 @@
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-export async function Sidebar() {
+export function Sidebar() {
+  const pathname = usePathname();
+  
+  const isActive = (path: string) => {
+    return pathname === path ? "bg-black text-white px-4 py-2 font-bold translate-x-2 shadow-lg" : "text-gray-500 hover:text-black hover:bg-gray-50 px-4 py-2 font-medium hover:translate-x-1";
+  };
+
   return (
-    <aside className="w-64 min-h-screen border-r border-black flex flex-col justify-between bg-white relative">
+    <aside className="w-64 min-h-screen border-r border-black flex flex-col justify-between bg-white relative hidden md:flex transition-all duration-300">
       <div className="p-8 pb-4">
         <div className="mb-8 border-b-4 border-black pb-4">
-          <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words">
-            KARYA BAHAN
+          <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words group cursor-default">
+            KARYA <span className="text-blue-600 transition-colors group-hover:text-black">BAHAN</span>
           </h1>
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             Toko Material & Bangunan
           </div>
         </div>
 
-        <nav className="flex flex-col gap-4">
-          <Link href="/" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
-            POS Dashboard
+        <nav className="flex flex-col gap-2">
+          <Link href="/" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/')}`}>
+            Kasir (POS)
           </Link>
-          <Link href="/materials" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
-            Inventory / Materials
+          <Link href="/restock" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/restock')}`}>
+            Restock / Kulakan
           </Link>
-          <Link href="/smart-import" className="text-lg font-medium hover:underline underline-offset-4 decoration-2 text-blue-600 flex items-center gap-2">
-            ✨ Smart Import
+          <Link href="/materials" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/materials')}`}>
+            Inventory
           </Link>
-          <Link href="/reports" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
+          <Link href="/reports" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/reports')}`}>
             Reports
           </Link>
-          <Link href="/trash" className="text-lg font-medium hover:underline underline-offset-4 decoration-2 text-red-600">
+          <Link href="/trash" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/trash')} hover:text-red-600 hover:bg-red-50`}>
             Tong Sampah
           </Link>
-          <Link href="/settings" className="text-lg font-medium hover:underline underline-offset-4 decoration-2">
+          <Link href="/settings" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/settings')}`}>
             Settings
           </Link>
         </nav>

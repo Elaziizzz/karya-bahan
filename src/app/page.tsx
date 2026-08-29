@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
+import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X } from "lucide-react";
+import { useToast } from "@/components/ui/ToastProvider";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 
 type Material = {
   id: string;
@@ -28,33 +30,42 @@ type Transaction = {
   };
 };
 
+type CartItem = {
+  material: Material;
+  quantity: number;
+  subtotal: number;
+};
+
 export default function POSDashboard() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]); // For summary
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   
-  const [transactionType, setTransactionType] = useState<'IN' | 'OUT'>('OUT');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [customPrice, setCustomPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [initialBudget, setInitialBudget] = useState<number>(0);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [tempBudget, setTempBudget] = useState("");
   const [activeStore] = useState<string>("karya_bahan");
-  const [transactionDate, setTransactionDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { showToast } = useToast();
+
+  const [receiptData, setReceiptData] = useState<{
+    invoiceNo: string;
+    date: Date;
+    items: CartItem[];
+    total: number;
+  } | null>(null);
+
+  const quantityInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchData("karya_bahan");
 
-    // Set default datetime to local current time
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    setTransactionDate(now.toISOString().slice(0, 16));
-
-    // Subscribe to real-time changes
     const materialSubscription = supabase
       .channel("public:materials")
       .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, () => {
@@ -69,8 +80,7 @@ export default function POSDashboard() {
       })
       .subscribe();
 
-    // Load initial budget from localStorage (per store)
-    const savedBudget = localStorage.getItem(`karyabahan_initial_budget_karya_bahan`);
+    const savedBudget = localStorage.getItem(`karyabahan_initial_budget_bysca`);
     if (savedBudget) {
       setInitialBudget(Number(savedBudget));
     } else {
@@ -102,7 +112,6 @@ export default function POSDashboard() {
   }
 
   async function fetchTransactions(store: string) {
-    // Fetch recent for the table (only active ones)
     const { data: recent } = await supabase
       .from("transactions")
       .select("*, materials(name)")
@@ -112,7 +121,6 @@ export default function POSDashboard() {
       .limit(10);
     if (recent) setTransactions(recent);
 
-    // Fetch all for summary (only active ones)
     const { data: all } = await supabase
       .from("transactions")
       .select("type, total_price")
@@ -127,55 +135,80 @@ export default function POSDashboard() {
   );
 
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId);
-  const calculatedPrice = selectedMaterial ? selectedMaterial.price * Number(quantity || 0) : 0;
   
-  // If IN, customPrice is Modal per Pcs, so Total = Modal per Pcs * Quantity
-  const finalPrice = transactionType === 'IN' 
-    ? (customPrice !== "" ? Number(customPrice) * Number(quantity || 0) : 0) 
-    : calculatedPrice;
-
   const totalRevenue = allTransactions.filter(t => t.type === 'OUT').reduce((sum, t) => sum + Number(t.total_price), 0);
   const totalExpense = allTransactions.filter(t => t.type === 'IN').reduce((sum, t) => sum + Number(t.total_price), 0);
   const netBalance = totalRevenue - totalExpense;
   const currentBudget = initialBudget + netBalance;
 
-  async function handleTransaction(e: React.FormEvent) {
+  const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
+  function addToCart(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMaterialId || quantity === "" || Number(quantity) <= 0 || finalPrice <= 0) return;
+    if (!selectedMaterial || !quantity || Number(quantity) <= 0) return;
 
+    const qtyNum = Number(quantity);
+    if (qtyNum > selectedMaterial.current_stock) {
+      showToast(`Stok tidak cukup! (Sisa: ${selectedMaterial.current_stock})`, "error");
+      return;
+    }
+
+    const subtotal = selectedMaterial.price * qtyNum;
+
+    setCart(prev => {
+      const existing = prev.find(item => item.material.id === selectedMaterial.id);
+      if (existing) {
+        return prev.map(item => 
+          item.material.id === selectedMaterial.id 
+            ? { ...item, quantity: item.quantity + qtyNum, subtotal: item.subtotal + subtotal }
+            : item
+        );
+      }
+      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal }];
+    });
+
+    setSelectedMaterialId("");
+    setSearchQuery("");
+    setQuantity("");
+    if (quantityInputRef.current) quantityInputRef.current.blur();
+  }
+
+  function removeFromCart(index: number) {
+    setCart(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleCheckout() {
+    if (cart.length === 0) return;
     setLoading(true);
-    
-    // For OUT, cost_price is what's in the DB. For IN, calculate inferred cost_price or fallback to DB cost.
-    let transactionCostPrice = selectedMaterial?.cost_price || 0;
-    if (transactionType === 'IN' && quantity && finalPrice) {
-       transactionCostPrice = finalPrice / Number(quantity);
-       // Optional: We could update the materials table to average the cost price here, but let's keep it simple for now
-    }
 
-    const insertData: any = {
-      material_id: selectedMaterialId,
-      type: transactionType,
-      quantity: Number(quantity),
-      cost_price: transactionCostPrice,
-      total_price: finalPrice,
-      store: activeStore
-    };
+    const now = new Date();
+    const invoiceNo = `KB-${now.getTime()}`;
 
-    if (transactionDate) {
-      insertData.created_at = new Date(transactionDate).toISOString();
-    }
+    const insertData = cart.map(item => ({
+      material_id: item.material.id,
+      type: 'OUT',
+      quantity: item.quantity,
+      cost_price: item.material.cost_price,
+      total_price: item.subtotal,
+      store: activeStore,
+      created_at: now.toISOString()
+    }));
 
-    const { error } = await supabase.from("transactions").insert([insertData]);
+    const { error } = await supabase.from("transactions").insert(insertData);
 
     setLoading(false);
     if (!error) {
-      setSelectedMaterialId("");
-      setSearchQuery("");
-      setQuantity("");
-      setCustomPrice("");
+      showToast("Transaksi berhasil disimpan", "success");
+      setReceiptData({
+        invoiceNo,
+        date: now,
+        items: [...cart],
+        total: cartTotal
+      });
+      setCart([]);
     } else {
       console.error(error);
-      alert("Error processing transaction");
+      showToast("Gagal menyimpan transaksi", "error");
     }
   }
 
@@ -190,307 +223,403 @@ export default function POSDashboard() {
     setLoading(false);
     if (error) {
       console.error(error);
-      alert("Error menghapus transaksi: " + error.message);
+      showToast("Gagal menghapus transaksi", "error");
+    } else {
+      showToast("Transaksi berhasil dihapus", "success");
     }
   }
 
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlightedIndex >= 0 && dropdownRef.current) {
+      const itemElement = dropdownRef.current.children[highlightedIndex] as HTMLElement;
+      if (itemElement) {
+        itemElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedIndex]);
+
+  const selectMaterial = (m: Material) => {
+    if (m.current_stock <= 0) return;
+    setSelectedMaterialId(m.id);
+    setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
+    setIsDropdownOpen(false);
+    setHighlightedIndex(-1);
+    
+    // Auto focus quantity
+    setTimeout(() => {
+      if (quantityInputRef.current) {
+        quantityInputRef.current.focus();
+      }
+    }, 50);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isDropdownOpen) {
+      if (e.key === 'ArrowDown') setIsDropdownOpen(true);
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev < filteredMaterials.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && highlightedIndex < filteredMaterials.length) {
+        selectMaterial(filteredMaterials[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setIsDropdownOpen(false);
+    }
+  };
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-12">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-fade-in print:p-0 print:m-0 print:max-w-none">
       
-      {/* Financial Summary */}
-      <div>
-        <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
-          <Wallet className="w-6 h-6" />
-          FINANCIAL SUMMARY
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="border border-black p-6 bg-white">
-            <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2">
-              <ArrowUpRight className="w-4 h-4 text-green-600" />
-              Total Penjualan (Revenue)
-            </div>
-            <div className="text-3xl font-mono font-bold text-green-700">
-              Rp {totalRevenue.toLocaleString("id-ID")}
-            </div>
-          </div>
-          <div className="border border-black p-6 bg-white">
-            <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2">
-              <ArrowDownRight className="w-4 h-4 text-red-600" />
-              Total Pembelian (Expense)
-            </div>
-            <div className="text-3xl font-mono font-bold text-red-700">
-              Rp {totalExpense.toLocaleString("id-ID")}
-            </div>
-          </div>
-          <div className="border border-black p-6 bg-black text-white relative">
-            <div className="text-sm font-bold uppercase text-gray-400 mb-2 flex justify-between items-center">
-              <span>Sisa Saldo Kas (Budget)</span>
-              <button onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }} className="text-xs border border-gray-600 px-2 py-1 hover:bg-gray-800 transition-colors">
-                Set Modal Awal
+      {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
+      {receiptData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:static print:bg-white print:z-auto print:flex print:items-start print:justify-start">
+          <div className="bg-white p-6 max-w-md w-full shadow-2xl relative print:shadow-none print:p-0 print:max-w-full">
+            <div className="absolute top-2 right-2 flex gap-2 print:hidden">
+              <button onClick={() => window.print()} className="p-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors" title="Cetak">
+                <Printer className="w-5 h-5" />
+              </button>
+              <button onClick={() => setReceiptData(null)} className="p-2 bg-gray-200 hover:bg-red-500 hover:text-white rounded transition-colors" title="Tutup">
+                <X className="w-5 h-5" />
               </button>
             </div>
             
-            {isEditingBudget ? (
-              <form onSubmit={saveBudget} className="flex gap-2 mt-2">
-                <input 
-                  type="number" 
-                  className="flex-1 bg-transparent border-b border-white text-white focus:outline-none" 
-                  value={tempBudget}
-                  onChange={e => setTempBudget(e.target.value)}
-                  placeholder="Modal Awal"
-                  autoFocus
-                />
-                <button type="submit" className="text-xs bg-white text-black px-2 font-bold uppercase">Save</button>
-                <button type="button" onClick={() => setIsEditingBudget(false)} className="text-xs text-gray-400 px-2">X</button>
-              </form>
-            ) : (
-              <div className="text-3xl font-mono font-bold">
-                Rp {currentBudget.toLocaleString("id-ID")}
+            {/* Receipt Content */}
+            <div className="font-mono text-sm print:text-black">
+              <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
+                <h2 className="text-2xl font-bold">KARYA BAHAN</h2>
+                <p className="text-xs">Toko Material & Bangunan</p>
               </div>
-            )}
-            
-            <div className="text-xs text-gray-500 mt-2">
-              (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* POS Form */}
-        <div className="lg:col-span-1">
-          <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6" />
-            NEW TRANSACTION
-          </h2>
-          
-          <form onSubmit={handleTransaction} className="space-y-6">
-            
-            {/* Transaction Date */}
-            <div>
-              <label className="block text-xs font-bold mb-2 uppercase tracking-wide">Tanggal Transaksi</label>
-              <input
-                type="datetime-local"
-                className="w-full border border-black p-3 bg-transparent focus:outline-none focus:ring-1 focus:ring-black"
-                value={transactionDate}
-                onChange={(e) => setTransactionDate(e.target.value)}
-                required
-              />
-            </div>
-
-            {/* Transaction Type Toggle */}
-            <div className="flex gap-4">
-              <label className="flex-1 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="type" 
-                  value="OUT" 
-                  className="peer sr-only"
-                  checked={transactionType === 'OUT'}
-                  onChange={() => setTransactionType('OUT')}
-                />
-                <div className="text-center p-3 border border-black font-bold uppercase peer-checked:bg-black peer-checked:text-white transition-colors">
-                  Jual Barang
+              
+              <div className="mb-4">
+                <div className="flex justify-between">
+                  <span>No: {receiptData.invoiceNo}</span>
+                  <span>{format(receiptData.date, "dd/MM/yyyy")}</span>
                 </div>
-              </label>
-              <label className="flex-1 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="type" 
-                  value="IN" 
-                  className="peer sr-only"
-                  checked={transactionType === 'IN'}
-                  onChange={() => setTransactionType('IN')}
-                />
-                <div className="text-center p-3 border border-black font-bold uppercase peer-checked:bg-black peer-checked:text-white transition-colors">
-                  Beli Bahan
+                <div className="flex justify-between">
+                  <span>Kasir: Admin</span>
+                  <span>{format(receiptData.date, "HH:mm")}</span>
                 </div>
-              </label>
-            </div>
-
-            <div className="relative">
-              <label className="block text-sm font-bold mb-2 uppercase">Material / Kode Barang</label>
-              <div 
-                className="w-full border border-black bg-white flex items-center relative"
-              >
-                <input
-                  type="text"
-                  className="w-full p-3 bg-transparent focus:outline-none focus:ring-1 focus:ring-black"
-                  placeholder="Ketik nama atau kode barang..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setIsDropdownOpen(true);
-                    if (selectedMaterialId) setSelectedMaterialId(""); // Clear selection if typing
-                  }}
-                  onFocus={() => setIsDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                />
               </div>
-
-              {isDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-black shadow-lg max-h-60 overflow-y-auto">
-                  {filteredMaterials.length === 0 ? (
-                    <div className="p-3 text-gray-500 text-sm">Tidak ditemukan...</div>
-                  ) : (
-                    filteredMaterials.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`p-3 cursor-pointer border-b border-gray-100 hover:bg-gray-100 flex justify-between items-center ${transactionType === 'OUT' && m.current_stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''} ${selectedMaterialId === m.id ? 'bg-gray-200 font-bold' : ''}`}
-                        onClick={() => {
-                          if (transactionType === 'OUT' && m.current_stock <= 0) return;
-                          setSelectedMaterialId(m.id);
-                          setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        <div>
-                          {m.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-gray-300">{m.code}</span>}
-                          <span>{m.name}</span>
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono">Stock: {m.current_stock}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold mb-2 uppercase">Quantity</label>
-              <input
-                type="number"
-                min="1"
-                max={transactionType === 'OUT' ? (selectedMaterial?.current_stock || 1) : undefined}
-                className="w-full border border-black p-3 bg-transparent focus:outline-none focus:ring-1 focus:ring-black"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
-                placeholder="Jumlah barang"
-                required
-              />
-            </div>
-
-            {transactionType === 'IN' && (
-              <div>
-                <label className="block text-sm font-bold mb-2 uppercase text-red-600">Harga Modal / Pcs (Rp)</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full border border-black p-3 bg-transparent focus:outline-none focus:ring-1 focus:ring-black"
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
-                  placeholder="Contoh: 50000"
-                  required
-                />
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-gray-300">
-              <div className="flex justify-between items-center text-lg">
-                <span className="font-bold uppercase">Total</span>
-                <span className={`font-mono font-bold ${transactionType === 'IN' ? 'text-red-600' : 'text-green-600'}`}>
-                  Rp {finalPrice.toLocaleString("id-ID")}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !selectedMaterialId || quantity === "" || Number(quantity) <= 0 || finalPrice <= 0}
-              className="w-full bg-black text-white p-4 font-bold uppercase tracking-wider hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 transition-colors flex justify-center items-center gap-2"
-            >
-              {loading ? "PROCESSING..." : (
-                <>
-                  <PlusCircle className="w-5 h-5" />
-                  SUBMIT
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Recent Transactions & Stock */}
-        <div className="lg:col-span-2 space-y-12">
-          <div>
-            <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2">
-              RECENT TRANSACTIONS
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
+              
+              <table className="w-full text-left mb-4 border-t border-b border-dashed border-gray-400 py-2">
                 <thead>
-                  <tr className="bg-gray-100 uppercase tracking-wide">
-                    <th className="p-3 border-b-2 border-black font-bold">Type</th>
-                    <th className="p-3 border-b-2 border-black font-bold">Date</th>
-                    <th className="p-3 border-b-2 border-black font-bold">Material</th>
-                    <th className="p-3 border-b-2 border-black font-bold text-right">Qty</th>
-                    <th className="p-3 border-b-2 border-black font-bold text-right">Total (Rp)</th>
-                    <th className="p-3 border-b-2 border-black font-bold text-center">Aksi</th>
+                  <tr className="border-b border-dashed border-gray-400">
+                    <th className="py-1">Barang</th>
+                    <th className="py-1 text-right">Qty</th>
+                    <th className="py-1 text-right">Harga</th>
+                    <th className="py-1 text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-500 italic">No active transactions found.</td>
+                  {receiptData.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="py-1 pr-2">{item.material.name}</td>
+                      <td className="py-1 text-right">{item.quantity}</td>
+                      <td className="py-1 text-right">{item.material.price.toLocaleString("id-ID")}</td>
+                      <td className="py-1 text-right">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
-                  ) : (
-                    transactions.map((t) => (
-                      <tr key={t.id} className="hover:bg-gray-50">
-                        <td className="p-3 border-b border-gray-200">
-                          {t.type === 'IN' ? (
-                            <span className="bg-red-100 text-red-800 px-2 py-1 text-xs font-bold rounded-sm border border-red-200">BELI (IN)</span>
-                          ) : (
-                            <span className="bg-green-100 text-green-800 px-2 py-1 text-xs font-bold rounded-sm border border-green-200">JUAL (OUT)</span>
-                          )}
-                        </td>
-                        <td className="p-3 border-b border-gray-200">
-                          {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
-                        </td>
-                        <td className="p-3 border-b border-gray-200 font-medium">
-                          {t.materials?.name || "Unknown"}
-                        </td>
-                        <td className="p-3 border-b border-gray-200 text-right font-mono">
-                          {t.quantity}
-                        </td>
-                        <td className={`p-3 border-b border-gray-200 text-right font-mono font-bold ${t.type === 'IN' ? 'text-red-600' : 'text-green-600'}`}>
-                          {t.type === 'IN' ? '-' : '+'} {t.total_price.toLocaleString("id-ID")}
-                        </td>
-                        <td className="p-3 border-b border-gray-200 text-center">
-                          <button 
-                            onClick={() => softDeleteTransaction(t.id)}
-                            className="text-xs border border-red-500 text-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-colors"
-                          >
-                            Hapus
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
+                  ))}
                 </tbody>
               </table>
+              
+              <div className="flex justify-between font-bold text-base mb-6">
+                <span>TOTAL</span>
+                <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
+              </div>
+              
+              <div className="text-center text-xs border-t border-dashed border-gray-400 pt-4">
+                <p>Terima Kasih</p>
+                <p>Barang yang sudah dibeli tidak dapat ditukar/dikembalikan</p>
+              </div>
             </div>
           </div>
-          
-          <div>
-            <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2">
-              CURRENT INVENTORY
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {materials.map((m) => (
-                <div key={m.id} className="border border-black p-4 flex flex-col justify-between">
-                  <div className="text-sm font-bold uppercase mb-2 truncate" title={m.name}>{m.name}</div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-xs text-gray-500">Stock</div>
-                    <div className={`text-2xl font-mono font-bold ${m.current_stock <= 10 ? "text-red-600" : ""}`}>
-                      {m.current_stock}
-                    </div>
-                  </div>
-                </div>
-              ))}
+        </div>
+      )}
+
+      {/* Main Content (Hidden during print) */}
+      <div className="print:hidden space-y-12">
+        {/* Financial Summary */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
+            <Wallet className="w-6 h-6" />
+            FINANCIAL SUMMARY
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="border border-black p-6 bg-white hover-elevate transition-swiss group">
+              <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
+                <ArrowUpRight className="w-4 h-4 text-green-600" />
+                Total Penjualan (Revenue)
+              </div>
+              <div className="text-3xl font-mono font-bold text-green-700">
+                Rp <AnimatedNumber value={totalRevenue} />
+              </div>
             </div>
+            <div className="border border-black p-6 bg-white hover-elevate transition-swiss group">
+              <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
+                <ArrowDownRight className="w-4 h-4 text-red-600" />
+                Total Pembelian (Expense)
+              </div>
+              <div className="text-3xl font-mono font-bold text-red-700">
+                Rp <AnimatedNumber value={totalExpense} />
+              </div>
+            </div>
+            <div className="border border-black p-6 bg-black text-white relative hover-elevate transition-swiss">
+              <div className="text-sm font-bold uppercase text-gray-400 mb-2 flex justify-between items-center">
+                <span>Sisa Saldo Kas (Budget)</span>
+                <button onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }} className="text-xs border border-gray-600 px-2 py-1 hover:bg-gray-800 transition-colors active-press">
+                  Set Modal Awal
+                </button>
+              </div>
+              
+              {isEditingBudget ? (
+                <form onSubmit={saveBudget} className="flex gap-2 mt-2 animate-fade-in">
+                  <input 
+                    type="number" 
+                    className="flex-1 bg-transparent border-b border-white text-white focus:outline-none focus:border-gray-400 transition-colors" 
+                    value={tempBudget}
+                    onChange={e => setTempBudget(e.target.value)}
+                    placeholder="Modal Awal"
+                    autoFocus
+                  />
+                  <button type="submit" className="text-xs bg-white text-black px-2 font-bold uppercase hover:bg-gray-200 transition-colors active-press">Save</button>
+                  <button type="button" onClick={() => setIsEditingBudget(false)} className="text-xs text-gray-400 px-2 hover:text-white transition-colors">X</button>
+                </form>
+              ) : (
+                <div className="text-3xl font-mono font-bold">
+                  Rp <AnimatedNumber value={currentBudget} />
+                </div>
+              )}
+              
+              <div className="text-xs text-gray-500 mt-2">
+                (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* POS Form - 1/3 Width */}
+          <div className="lg:col-span-1">
+            <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
+              <PlusCircle className="w-6 h-6" />
+              TAMBAH BARANG
+            </h2>
+            
+            <form onSubmit={addToCart} className="space-y-6">
+              <div className="relative">
+                <label className="block text-sm font-bold mb-2 uppercase">Cari Barang</label>
+                <div 
+                  className={`w-full border bg-white flex items-center relative transition-swiss ${isDropdownOpen ? 'border-black ring-1 ring-black' : 'border-black'}`}
+                >
+                  <input
+                    type="text"
+                    className="w-full p-3 bg-transparent focus:outline-none"
+                    placeholder="Ketik nama atau kode barang..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setHighlightedIndex(-1);
+                      setIsDropdownOpen(true);
+                      if (selectedMaterialId) setSelectedMaterialId("");
+                    }}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                  />
+                </div>
+
+                {isDropdownOpen && (
+                  <div ref={dropdownRef} className="absolute z-20 w-full mt-1 bg-white border border-black shadow-xl max-h-60 overflow-y-auto animate-fade-in">
+                    {filteredMaterials.length === 0 ? (
+                      <div className="p-3 text-gray-500 text-sm">Tidak ditemukan...</div>
+                    ) : (
+                      filteredMaterials.map((m, index) => (
+                        <div
+                          key={m.id}
+                          className={`p-3 cursor-pointer border-b border-gray-100 transition-colors flex justify-between items-center ${m.current_stock <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} ${selectedMaterialId === m.id ? 'bg-gray-200 font-bold' : ''} ${highlightedIndex === index ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'}`}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            selectMaterial(m);
+                          }}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                        >
+                          <div>
+                            {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{m.code}</span>}
+                            <span>{m.name}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono">Stock: {m.current_stock}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold mb-2 uppercase">Quantity</label>
+                <input
+                  ref={quantityInputRef}
+                  type="number"
+                  min="1"
+                  max={selectedMaterial?.current_stock || undefined}
+                  className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  placeholder="Jumlah barang"
+                  required
+                />
+                {selectedMaterial && (
+                  <div className="mt-1 text-xs text-gray-500 font-mono">
+                    Harga: Rp {selectedMaterial.price.toLocaleString("id-ID")} | Max Qty: {selectedMaterial.current_stock}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={!selectedMaterialId || quantity === "" || Number(quantity) <= 0}
+                className="w-full border-2 border-black bg-white text-black p-4 font-bold uppercase tracking-wider hover:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
+              >
+                TAMBAH KE KERANJANG
+              </button>
+            </form>
+          </div>
+
+          {/* Cart Table - 2/3 Width */}
+          <div className="lg:col-span-2">
+            <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
+              <ShoppingCart className="w-6 h-6" />
+              KERANJANG
+            </h2>
+            
+            <div className="border border-black bg-white overflow-hidden flex flex-col min-h-[400px]">
+              <div className="overflow-x-auto flex-1">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-gray-100 uppercase tracking-wide">
+                      <th className="p-3 border-b-2 border-black font-bold w-12 text-center">No</th>
+                      <th className="p-3 border-b-2 border-black font-bold">Barang</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Qty</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Harga/Pcs</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Subtotal</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-center w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-gray-500 italic">Keranjang kosong. Tambahkan barang di sebelah kiri.</td>
+                      </tr>
+                    ) : (
+                      cart.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50 border-b border-gray-200">
+                          <td className="p-3 text-center">{index + 1}</td>
+                          <td className="p-3 font-medium">
+                            {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
+                            {item.material.name}
+                          </td>
+                          <td className="p-3 text-right font-mono">{item.quantity}</td>
+                          <td className="p-3 text-right font-mono">Rp {item.material.price.toLocaleString("id-ID")}</td>
+                          <td className="p-3 text-right font-mono font-bold">Rp {item.subtotal.toLocaleString("id-ID")}</td>
+                          <td className="p-3 text-center">
+                            <button 
+                              onClick={() => removeFromCart(index)}
+                              className="text-red-500 hover:text-red-700 transition-colors p-1"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="bg-gray-100 p-4 border-t-2 border-black">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-xl font-bold uppercase tracking-wider">Grand Total</span>
+                  <span className="text-3xl font-mono font-bold text-green-700">
+                    Rp <AnimatedNumber value={cartTotal} />
+                  </span>
+                </div>
+                
+                <button
+                  onClick={handleCheckout}
+                  disabled={loading || cart.length === 0}
+                  className="w-full bg-black text-white p-4 font-bold text-lg uppercase tracking-wider hover:bg-gray-800 disabled:bg-gray-400 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
+                >
+                  {loading ? "PROCESSING..." : "BAYAR / CHECKOUT"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Transactions */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2">
+            RECENT TRANSACTIONS
+          </h2>
+          <div className="overflow-x-auto border border-black bg-white">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-gray-100 uppercase tracking-wide">
+                  <th className="p-3 border-b-2 border-black font-bold">Date</th>
+                  <th className="p-3 border-b-2 border-black font-bold">Material</th>
+                  <th className="p-3 border-b-2 border-black font-bold text-right">Qty</th>
+                  <th className="p-3 border-b-2 border-black font-bold text-right">Total (Rp)</th>
+                  <th className="p-3 border-b-2 border-black font-bold text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-gray-500 italic">No active transactions found.</td>
+                  </tr>
+                ) : (
+                  transactions.map((t) => (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="p-3 border-b border-gray-200">
+                        {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
+                      </td>
+                      <td className="p-3 border-b border-gray-200 font-medium">
+                        {t.materials?.name || "Unknown"}
+                      </td>
+                      <td className="p-3 border-b border-gray-200 text-right font-mono">
+                        {t.quantity}
+                      </td>
+                      <td className="p-3 border-b border-gray-200 text-right font-mono font-bold text-green-600">
+                        + {t.total_price.toLocaleString("id-ID")}
+                      </td>
+                      <td className="p-3 border-b border-gray-200 text-center">
+                        <button 
+                          onClick={() => softDeleteTransaction(t.id)}
+                          className="text-xs border border-red-500 text-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-swiss active-press"
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

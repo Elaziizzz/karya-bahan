@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Package, Plus, Trash2, Edit2, Check, X } from "lucide-react";
-
-// Removed getCookie
+import { Package, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
+import * as XLSX from "xlsx";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type Material = {
   id: string;
@@ -16,25 +16,51 @@ type Material = {
   code?: string;
 };
 
+type ImportRow = {
+  id: string;
+  code: string;
+  name: string;
+  stock: number;
+  cost_price: number;
+  price: number;
+  status: 'valid' | 'warning' | 'error';
+  statusMessage?: string;
+  conflictData?: any;
+  resolution?: 'tambah_stok' | 'set_stok' | 'skip';
+};
+
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeStore] = useState<string>("karya_bahan");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { showToast } = useToast();
 
-  // Form states for creating a new material
-  const [newName, setNewName] = useState("");
-  const [newCode, setNewCode] = useState("");
-  const [newStock, setNewStock] = useState("");
-  const [newCostPrice, setNewCostPrice] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    cost_price: "",
+    price: "",
+    current_stock: "",
+  });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editCode, setEditCode] = useState("");
-  const [editCostPrice, setEditCostPrice] = useState("");
-  const [editPrice, setEditPrice] = useState("");
-  const [editStock, setEditStock] = useState("");
+
+  // Smart Import States
+  const [showImportSection, setShowImportSection] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState("");
+  const [previewData, setPreviewData] = useState<ImportRow[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    newItems: number;
+    updatedItems: number;
+    skipped: number;
+    errors: number;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchMaterials("karya_bahan");
@@ -51,34 +77,53 @@ export default function MaterialsPage() {
     setLoading(false);
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  // --- Manual Material Handlers ---
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName || newPrice === "" || Number(newPrice) < 0 || newCostPrice === "" || Number(newCostPrice) < 0 || newStock === "" || Number(newStock) < 0) return;
+    setLoading(true);
+    
+    if (editingId) {
+      const { error } = await supabase
+        .from("materials")
+        .update({
+          name: formData.name,
+          code: formData.code || null,
+          cost_price: Number(formData.cost_price),
+          price: Number(formData.price),
+          current_stock: Number(formData.current_stock),
+        })
+        .eq("id", editingId);
 
-    setIsCreating(true);
-    const { error } = await supabase.from("materials").insert([
-      { 
-        name: newName, 
-        code: newCode || null,
-        current_stock: Number(newStock), 
-        cost_price: Number(newCostPrice),
-        price: Number(newPrice),
-        store: activeStore 
+      if (error) {
+        showToast("Error memperbarui material: " + error.message, "error");
+      } else {
+        showToast("Material berhasil diperbarui!", "success");
+        setIsModalOpen(false);
+        setEditingId(null);
+        fetchMaterials(activeStore);
       }
-    ]);
-
-    setIsCreating(false);
-    if (!error) {
-      setNewName("");
-      setNewCode("");
-      setNewStock("");
-      setNewCostPrice("");
-      setNewPrice("");
-      fetchMaterials(activeStore); // Reload list
     } else {
-      alert("Error adding material: " + (error.message || JSON.stringify(error)));
-      console.error(error);
+      const { error } = await supabase.from("materials").insert([
+        {
+          name: formData.name,
+          code: formData.code || null,
+          current_stock: Number(formData.current_stock),
+          cost_price: Number(formData.cost_price),
+          price: Number(formData.price),
+          store: activeStore,
+        },
+      ]);
+
+      if (error) {
+        showToast("Error menyimpan material: " + error.message, "error");
+      } else {
+        showToast("Material berhasil disimpan!", "success");
+        setIsModalOpen(false);
+        setFormData({ name: "", code: "", cost_price: "", price: "", current_stock: "" });
+        fetchMaterials(activeStore);
+      }
     }
+    setLoading(false);
   }
 
   async function handleDelete(id: string) {
@@ -86,247 +131,520 @@ export default function MaterialsPage() {
 
     const { error } = await supabase.from("materials").delete().eq("id", id);
     if (error) {
-      alert("Error deleting material. It might have transaction history that prevents deletion.");
-      console.error(error);
+      showToast("Gagal menghapus material: " + error.message, "error");
     } else {
+      showToast("Material berhasil dihapus", "success");
       fetchMaterials(activeStore);
     }
   }
 
-  function startEditing(m: Material) {
-    setEditingId(m.id);
-    setEditName(m.name);
-    setEditCode(m.code || "");
-    setEditCostPrice(String(m.cost_price));
-    setEditPrice(String(m.price));
-    setEditStock(String(m.current_stock));
-  }
+  // --- Smart Import Handlers ---
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
-  function cancelEditing() {
-    setEditingId(null);
-  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
 
-  async function saveEditing(id: string) {
-    if (!editName || editPrice === "" || Number(editPrice) < 0 || editCostPrice === "" || Number(editCostPrice) < 0 || editStock === "" || Number(editStock) < 0) return;
-
-    const { error } = await supabase
-      .from("materials")
-      .update({ name: editName, code: editCode || null, cost_price: Number(editCostPrice), price: Number(editPrice), current_stock: Number(editStock) })
-      .eq("id", id);
-
-    if (!error) {
-      setEditingId(null);
-      fetchMaterials(activeStore);
-    } else {
-      alert("Error updating material.");
-      console.error(error);
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
     }
-  }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = async (file: File) => {
+    setImportLoading(true);
+    setLoadingStep("Membaca file...");
+    setPreviewData([]);
+    setShowPreview(false);
+    setImportResult(null);
+
+    try {
+      const fileType = file.name.split('.').pop()?.toLowerCase();
+      let extractedData: any[] = [];
+
+      if (['jpg', 'jpeg', 'png'].includes(fileType || '')) {
+        setLoadingStep("AI sedang membaca tabel dari gambar...");
+        const formData = new FormData();
+        formData.append("action", "OCR_IMAGE");
+        formData.append("image", file);
+
+        const response = await fetch("/api/ai-import", { method: "POST", body: formData });
+        const data = await response.json();
+        
+        if (!response.ok) {
+          showToast(data.error || "Gagal memproses gambar", "error");
+          throw new Error(data.error || "Gagal memproses gambar");
+        }
+        extractedData = data;
+        showToast("Gambar berhasil dianalisis!", "success");
+
+      } else if (['xlsx', 'xls', 'csv'].includes(fileType || '')) {
+        setLoadingStep("Mengekstrak data tabel...");
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'buffer' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+
+        if (rawData.length < 2) throw new Error("File kosong atau tidak memiliki baris data");
+
+        const headers = rawData[0];
+        const sampleRows = rawData.slice(1, 5);
+
+        setLoadingStep("AI sedang memetakan kolom secara otomatis...");
+        const formData = new FormData();
+        formData.append("action", "MAP_COLUMNS");
+        formData.append("headers", JSON.stringify(headers));
+        formData.append("sampleRows", JSON.stringify(sampleRows));
+
+        const response = await fetch("/api/ai-import", { method: "POST", body: formData });
+        const mapping = await response.json();
+
+        if (!response.ok) throw new Error(mapping.error || "Gagal memetakan kolom");
+        
+        for (let i = 1; i < rawData.length; i++) {
+          const row = rawData[i];
+          if (!row || row.length === 0) continue;
+          let rowObj: any = {};
+          headers.forEach((h, idx) => { rowObj[h] = row[idx]; });
+
+          let mappedRow: any = { code: "", name: "", stock: 0, cost_price: 0, price: 0 };
+          if (mapping.code) mappedRow.code = String(rowObj[mapping.code] || "");
+          if (mapping.name) mappedRow.name = String(rowObj[mapping.name] || "");
+          if (mapping.stock) mappedRow.stock = Number(rowObj[mapping.stock]) || 0;
+          if (mapping.cost_price) mappedRow.cost_price = Number(rowObj[mapping.cost_price]) || 0;
+          if (mapping.price) mappedRow.price = Number(rowObj[mapping.price]) || 0;
+
+          if (mappedRow.name || mappedRow.code) extractedData.push(mappedRow);
+        }
+        showToast("Data tabel berhasil dipetakan!", "success");
+      } else {
+        throw new Error("Format file tidak didukung.");
+      }
+
+      await validateAndCheckConflicts(extractedData);
+    } catch (error: any) {
+      showToast(error.message, "error");
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const validateAndCheckConflicts = async (data: any[]) => {
+    setLoadingStep("Memvalidasi dan mengecek konflik...");
+    const { data: existingMaterials } = await supabase.from("materials").select("*").eq("store", activeStore);
+
+    const processedData: ImportRow[] = data.map((item, index) => {
+      let status: 'valid' | 'warning' | 'error' = 'valid';
+      let statusMessage = '';
+      let conflict = existingMaterials?.find(m => (item.code && m.code?.toLowerCase() === item.code.toLowerCase()) || (item.name && m.name.toLowerCase() === item.name.toLowerCase()));
+
+      if (!item.name && !item.code) { status = 'error'; statusMessage = 'Data tidak lengkap'; }
+      else if (conflict) { status = 'warning'; statusMessage = `Barang sudah ada (Stok: ${conflict.current_stock})`; }
+
+      return { id: `temp-${index}`, ...item, status, statusMessage, conflictData: conflict, resolution: conflict ? 'tambah_stok' : undefined };
+    });
+
+    setPreviewData(processedData);
+    setShowPreview(true);
+  };
+
+  const updatePreviewRow = (id: string, field: keyof ImportRow, value: any) => {
+    setPreviewData(prev => prev.map(row => {
+      if (row.id === id) {
+        const newRow = { ...row, [field]: value };
+        if (field === 'name' || field === 'code') {
+          if (!newRow.name && !newRow.code) {
+            newRow.status = 'error';
+            newRow.statusMessage = 'Data tidak lengkap';
+          } else {
+            if (newRow.status === 'error') {
+              newRow.status = 'valid';
+              newRow.statusMessage = '';
+            }
+          }
+        }
+        return newRow;
+      }
+      return row;
+    }));
+  };
+
+  const executeImport = async () => {
+    const validData = previewData.filter(d => d.status !== 'error' && d.resolution !== 'skip');
+    if (validData.length === 0) return;
+
+    setImportLoading(true);
+    setLoadingStep("Menyimpan ke database...");
+    let result = { newItems: 0, updatedItems: 0, skipped: 0, errors: 0 };
+    
+    for (const row of validData) {
+      if (row.conflictData) {
+        const newStock = row.resolution === 'tambah_stok' ? row.conflictData.current_stock + row.stock : row.stock;
+        const { error } = await supabase.from("materials").update({ 
+            current_stock: newStock,
+            code: row.code || row.conflictData.code,
+            name: row.name || row.conflictData.name,
+            cost_price: row.cost_price || row.conflictData.cost_price,
+            price: row.price || row.conflictData.price
+        }).eq("id", row.conflictData.id);
+        if (error) result.errors++; else result.updatedItems++;
+      } else {
+        const { error } = await supabase.from("materials").insert({ store: activeStore, code: row.code, name: row.name, current_stock: row.stock, cost_price: row.cost_price, price: row.price });
+        if (error) result.errors++; else result.newItems++;
+      }
+    }
+
+    setImportLoading(false);
+    setShowPreview(false);
+    setImportResult(result);
+    showToast("Import selesai!", "success");
+    fetchMaterials(activeStore); // Refresh the main list
+  };
+
+  const filteredMaterials = materials.filter(m => 
+    m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    m.code?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-12">
-      <div className="border-b-2 border-black pb-4">
-        <h1 className="text-3xl font-bold uppercase flex items-center gap-2">
-          <Package className="w-8 h-8" />
-          MATERIALS / INVENTORY
-        </h1>
-        <p className="text-gray-500 mt-2">Manage your products, base prices, and starting stock.</p>
-      </div>
-
-      {/* CREATE FORM */}
-      <div className="border border-black p-6 bg-gray-50">
-        <h2 className="text-lg font-bold uppercase mb-4">Add New Material</h2>
-        <form onSubmit={handleCreate} className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <label className="block text-sm font-bold mb-1 uppercase">Material Name</label>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-end mb-8 border-b-2 border-black pb-4 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold uppercase flex items-center gap-2">
+            <Package className="w-8 h-8" />
+            MATERIALS / INVENTORY
+          </h1>
+          <p className="text-gray-500 mt-2">Manage your products, base prices, and starting stock.</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-4">
+          <div className="relative flex-1 sm:flex-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Semen Putih 40kg"
-              required
-            />
-          </div>
-          <div className="w-full md:w-32">
-            <label className="block text-sm font-bold mb-1 uppercase">Kode Barang</label>
-            <input
-              type="text"
-              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black uppercase"
-              value={newCode}
-              onChange={(e) => setNewCode(e.target.value)}
-              placeholder="e.g. SMN-01"
-            />
-          </div>
-          <div className="w-full md:w-32">
-            <label className="block text-sm font-bold mb-1 uppercase">Start Stock</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-              value={newStock}
-              onChange={(e) => setNewStock(e.target.value.replace(/^0+(?=\d)/, ''))}
-              placeholder="e.g. 50"
-              required
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <label className="block text-sm font-bold mb-1 uppercase">Harga Modal / Pcs</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-              value={newCostPrice}
-              onChange={(e) => setNewCostPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
-              placeholder="e.g. 100000"
-              required
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <label className="block text-sm font-bold mb-1 uppercase text-green-700">Harga Jual / Pcs</label>
-            <input
-              type="number"
-              min="0"
-              className="w-full border border-black p-2 bg-white focus:outline-none focus:ring-1 focus:ring-black"
-              value={newPrice}
-              onChange={(e) => setNewPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
-              placeholder="e.g. 150000"
-              required
+              placeholder="Cari..."
+              className="border border-black p-2 pl-10 focus-ring outline-none transition-swiss w-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <button
-            type="submit"
-            disabled={isCreating}
-            className="w-full md:w-auto bg-black text-white px-6 py-2.5 font-bold uppercase hover:bg-gray-800 disabled:bg-gray-400 flex justify-center items-center gap-2"
+            onClick={() => {
+              setShowImportSection(prev => !prev);
+              setImportResult(null);
+              setShowPreview(false);
+            }}
+            className="border-2 border-black text-black bg-white px-6 py-2 font-bold uppercase hover:bg-gray-100 transition-swiss flex items-center justify-center gap-2 active-press flex-1 sm:flex-none"
           >
-            {isCreating ? "..." : <><Plus className="w-4 h-4" /> Add</>}
+            <Zap className="w-4 h-4 text-blue-600" />
+            {showImportSection ? "Tutup AI" : "AI Import"}
           </button>
-        </form>
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setFormData({ name: "", code: "", cost_price: "", price: "", current_stock: "" });
+              setIsModalOpen(true);
+            }}
+            className="bg-black text-white px-6 py-2 font-bold uppercase hover:bg-gray-800 transition-swiss active-press hover-elevate flex-1 sm:flex-none justify-center"
+          >
+            + Tambah
+          </button>
+        </div>
       </div>
 
-      {/* READ / UPDATE / DELETE TABLE */}
-      <div>
-        <div className="overflow-x-auto border border-black">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr className="bg-black text-white uppercase tracking-wide text-xs">
-                <th className="p-4 font-bold border-r border-gray-700">Kode</th>
-                <th className="p-4 font-bold border-r border-gray-700">Nama Barang</th>
-                <th className="p-4 font-bold border-r border-gray-700 text-right">Stok</th>
-                <th className="p-4 font-bold border-r border-gray-700 text-right">H. Modal (Rp)</th>
-                <th className="p-4 font-bold border-r border-gray-700 text-right text-green-400">H. Jual (Rp)</th>
-                <th className="p-4 font-bold border-r border-gray-700 text-right text-blue-400">Total Nilai Stok</th>
-                <th className="p-4 font-bold border-r border-gray-700 text-right text-yellow-400">Potensi Profit</th>
-                <th className="p-4 font-bold text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-gray-500 italic">Loading materials...</td>
-                </tr>
-              ) : materials.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-500 italic">No materials found.</td>
-                </tr>
-              ) : (
-                materials.map((m) => (
-                  <tr key={m.id} className="border-b border-black last:border-b-0 hover:bg-gray-50">
-                    <td className="p-4 border-r border-black font-mono">
-                      {editingId === m.id ? (
-                        <input
-                          type="text"
-                          className="w-full border border-black p-1 focus:outline-none focus:ring-1 focus:ring-black uppercase"
-                          value={editCode}
-                          onChange={(e) => setEditCode(e.target.value)}
-                        />
-                      ) : (
-                        m.code || "-"
-                      )}
-                    </td>
-                    <td className="p-4 border-r border-black">
-                      {editingId === m.id ? (
-                        <input
-                          type="text"
-                          className="w-full border border-black p-1 focus:outline-none focus:ring-1 focus:ring-black"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                        />
-                      ) : (
-                        <span className="font-bold">{m.name}</span>
-                      )}
-                    </td>
-                    <td className="p-4 border-r border-black text-right font-mono text-lg">
-                      {editingId === m.id ? (
-                        <input
-                          type="number"
-                          className="w-full border border-black p-1 text-right focus:outline-none focus:ring-1 focus:ring-black"
-                          value={editStock}
-                          onChange={(e) => setEditStock(e.target.value.replace(/^0+(?=\d)/, ''))}
-                        />
-                      ) : (
-                        m.current_stock
-                      )}
-                    </td>
-                    <td className="p-4 border-r border-black text-right font-mono">
-                      {editingId === m.id ? (
-                        <input
-                          type="number"
-                          className="w-full border border-black p-1 text-right focus:outline-none focus:ring-1 focus:ring-black"
-                          value={editCostPrice}
-                          onChange={(e) => setEditCostPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
-                        />
-                      ) : (
-                        m.cost_price?.toLocaleString("id-ID") || 0
-                      )}
-                    </td>
-                    <td className="p-4 border-r border-black text-right font-mono text-green-700 font-bold">
-                      {editingId === m.id ? (
-                        <input
-                          type="number"
-                          className="w-full border border-black p-1 text-right focus:outline-none focus:ring-1 focus:ring-black"
-                          value={editPrice}
-                          onChange={(e) => setEditPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
-                        />
-                      ) : (
-                        m.price.toLocaleString("id-ID")
-                      )}
-                    </td>
-                    <td className="p-4 border-r border-black text-right font-mono font-bold text-blue-700">
-                      {editingId === m.id ? "-" : (m.current_stock * (m.cost_price || 0)).toLocaleString("id-ID")}
-                    </td>
-                    <td className="p-4 border-r border-black text-right font-mono font-bold text-yellow-600">
-                      {editingId === m.id ? "-" : (m.current_stock * (m.price - (m.cost_price || 0))).toLocaleString("id-ID")}
-                    </td>
-                    <td className="p-4 text-center">
-                      {editingId === m.id ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => saveEditing(m.id)} className="p-1 text-green-600 hover:bg-green-100 border border-green-600">
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button onClick={cancelEditing} className="p-1 text-gray-600 hover:bg-gray-200 border border-gray-600">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => startEditing(m)} className="p-1 text-blue-600 hover:bg-blue-100 border border-blue-600 transition-colors" title="Edit">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(m.id)} className="p-1 text-red-600 hover:bg-red-100 border border-red-600 transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* --- SMART IMPORT SECTION --- */}
+      {showImportSection && (
+        <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-blue-50 border-2 border-blue-600 p-6">
+            <h2 className="text-xl font-bold uppercase flex items-center gap-2 mb-4 text-blue-800">
+              <Zap className="w-6 h-6 animate-pulse text-blue-600" />
+              Upload Data via AI
+            </h2>
+            
+            {!showPreview && !importResult && (
+              <div 
+                className={`border-4 border-dashed p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer bg-white ${isDragging ? 'border-blue-500 bg-blue-50 scale-[1.01]' : 'border-gray-300 hover:bg-gray-50'}`}
+                onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx,.xls,.csv,.jpg,.jpeg,.png" onChange={handleFileChange} />
+                {importLoading ? (
+                  <div className="space-y-4 text-center">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="font-bold text-lg animate-pulse">{loadingStep}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex gap-4 justify-center">
+                      <FileSpreadsheet className="w-12 h-12 text-green-600" />
+                      <ImageIcon className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold uppercase">Drag & Drop atau Klik untuk Upload</h3>
+                      <p className="text-sm text-gray-500 mt-1">Upload foto catatan buku, nota, Excel, atau CSV. AI akan otomatis membacanya.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {importResult && (
+              <div className="bg-white border border-black p-6 animate-in zoom-in duration-300 text-center">
+                <h3 className="text-2xl font-black mb-6 uppercase">Hasil Import</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {Object.entries(importResult).map(([key, val]) => (
+                    <div key={key} className="border border-gray-200 bg-gray-50 p-4 hover-elevate transition-swiss cursor-default">
+                      <div className="text-3xl font-black">{val}</div>
+                      <div className="text-xs font-bold text-gray-500 uppercase">{key}</div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => { setImportResult(null); setShowImportSection(false); }} className="px-8 bg-black text-white py-3 font-bold uppercase hover:bg-gray-800 transition-swiss active-press hover-elevate">Tutup & Selesai</button>
+              </div>
+            )}
+
+            {showPreview && (
+              <div className="bg-white border border-black p-4 space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+                <div className="flex justify-between items-end border-b border-gray-200 pb-2">
+                  <div>
+                    <h3 className="text-lg font-bold uppercase">Preview & Edit</h3>
+                    <p className="text-xs text-gray-500">Edit data jika ada yang kurang tepat sebelum disimpan.</p>
+                  </div>
+                  <div className="flex gap-4 text-xs font-bold">
+                    <div className="text-green-600">Valid: {previewData.filter(d => d.status === 'valid').length}</div>
+                    <div className="text-yellow-600">Warning: {previewData.filter(d => d.status === 'warning').length}</div>
+                    <div className="text-red-600">Error: {previewData.filter(d => d.status === 'error').length}</div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto border border-gray-200 shadow-inner bg-gray-50">
+                  <div className="max-h-[50vh] overflow-y-auto">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="sticky top-0 bg-black text-white uppercase tracking-wide text-xs z-10 border-b border-gray-300">
+                        <tr>
+                          <th className="p-2 w-10 text-center">Sts</th>
+                          <th className="p-2">Kode</th>
+                          <th className="p-2 min-w-[200px]">Nama Barang</th>
+                          <th className="p-2 w-24">Stok</th>
+                          <th className="p-2 w-32">H. Modal</th>
+                          <th className="p-2 w-32">H. Jual</th>
+                          <th className="p-2 min-w-[200px] border-l border-gray-700 bg-gray-900">Resolusi (Jika Konflik)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {previewData.map((row) => (
+                          <tr key={row.id} className={`${row.status === 'error' ? 'bg-red-50' : row.status === 'warning' ? 'bg-yellow-50' : 'bg-white hover:bg-gray-50'} ${row.resolution === 'skip' ? 'opacity-50' : ''} transition-swiss group`}>
+                            <td className="p-2 text-center border-r border-gray-200">
+                              {row.status === 'valid' && <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />}
+                              {row.status === 'warning' && <span title={row.statusMessage}><AlertCircle className="w-4 h-4 text-yellow-500 mx-auto" /></span>}
+                              {row.status === 'error' && <span title={row.statusMessage}><XCircle className="w-4 h-4 text-red-500 mx-auto" /></span>}
+                            </td>
+                            <td className="p-1 border-r border-gray-200">
+                              <input type="text" value={row.code} onChange={(e) => updatePreviewRow(row.id, 'code', e.target.value)} className="w-full px-2 py-1.5 text-xs font-mono border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent" placeholder="Kode" />
+                            </td>
+                            <td className="p-1 border-r border-gray-200">
+                              <input type="text" value={row.name} onChange={(e) => updatePreviewRow(row.id, 'name', e.target.value)} className={`w-full px-2 py-1.5 text-xs font-bold border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent ${!row.name ? 'border-red-300 bg-red-100/50' : ''}`} placeholder="Nama Barang" />
+                            </td>
+                            <td className="p-1 border-r border-gray-200">
+                              <input type="number" value={row.stock} onChange={(e) => updatePreviewRow(row.id, 'stock', Number(e.target.value))} className="w-full px-2 py-1.5 text-xs border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent font-mono text-right" />
+                            </td>
+                            <td className="p-1 border-r border-gray-200">
+                              <input type="number" value={row.cost_price} onChange={(e) => updatePreviewRow(row.id, 'cost_price', Number(e.target.value))} className="w-full px-2 py-1.5 text-xs border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent font-mono text-right text-red-600" />
+                            </td>
+                            <td className="p-1 border-r border-gray-200">
+                              <input type="number" value={row.price} onChange={(e) => updatePreviewRow(row.id, 'price', Number(e.target.value))} className="w-full px-2 py-1.5 text-xs border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent font-mono text-right text-green-700 font-bold" />
+                            </td>
+                            <td className="p-2 border-l border-gray-200">
+                              {row.conflictData ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] uppercase text-gray-500 font-bold truncate" title={row.statusMessage}>{row.statusMessage}</span>
+                                  <select 
+                                    className="text-[10px] font-bold border border-black p-1 bg-white focus-ring cursor-pointer hover-elevate transition-swiss"
+                                    value={row.resolution}
+                                    onChange={(e) => updatePreviewRow(row.id, 'resolution', e.target.value)}
+                                  >
+                                    <option value="tambah_stok">+ Stok</option>
+                                    <option value="set_stok">Timpa Stok</option>
+                                    <option value="skip">Skip Data Ini</option>
+                                  </select>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-green-600 font-bold uppercase flex items-center gap-1 pl-2">
+                                  <CheckCircle2 className="w-3 h-3" /> Item Baru
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center bg-gray-100 p-3 border border-black">
+                  <div>
+                    {importLoading && <span className="text-xs font-bold text-blue-600 animate-pulse">{loadingStep}</span>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setShowPreview(false); setPreviewData([]); }}
+                      disabled={importLoading}
+                      className="px-6 py-2 text-xs font-bold uppercase border border-black hover:bg-gray-200 disabled:opacity-50 transition-swiss active-press hover-elevate"
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      onClick={executeImport}
+                      disabled={importLoading || previewData.filter(d => d.status !== 'error').length === 0}
+                      className="px-6 py-2 text-xs font-bold uppercase bg-blue-600 text-white flex items-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 transition-swiss active-press hover-elevate"
+                    >
+                      <Save className="w-4 h-4" />
+                      Simpan Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      )}
+
+      {/* --- MANUAL ADD / EDIT MODAL --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 max-w-md w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
+            <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
+              <Edit2 className="w-5 h-5" />
+              {editingId ? "Edit Material" : "Tambah Material"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Opsional)</label>
+                <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
+                <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1 uppercase">Harga Beli</label>
+                  <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.cost_price} onChange={(e) => setFormData({...formData, cost_price: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1 uppercase">Harga Jual</label>
+                  <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase">Stok</label>
+                <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.current_stock} onChange={(e) => setFormData({...formData, current_stock: e.target.value})} />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-200 p-2 font-bold uppercase hover:bg-gray-300 transition-swiss active-press">Batal</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-black text-white p-2 font-bold uppercase hover:bg-gray-800 transition-swiss hover-elevate active-press flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4" /> Simpan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- INVENTORY TABLE --- */}
+      <div className="overflow-x-auto border border-black shadow-sm">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead>
+            <tr className="bg-black text-white uppercase text-xs tracking-wide">
+              <th className="p-4 border-r border-gray-700">Kode</th>
+              <th className="p-4 border-r border-gray-700">Nama Barang</th>
+              <th className="p-4 text-right border-r border-gray-700">Stok</th>
+              <th className="p-4 text-right border-r border-gray-700">H. Modal (Rp)</th>
+              <th className="p-4 text-right border-r border-gray-700 text-green-400">H. Jual (Rp)</th>
+              <th className="p-4 text-right border-r border-gray-700 text-blue-400">Total Nilai Stok</th>
+              <th className="p-4 text-right border-r border-gray-700 text-yellow-400">Potensi Profit</th>
+              <th className="p-4 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1,2,3].map(i => (
+                <tr key={i} className="animate-pulse bg-gray-50 border-b border-gray-200">
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-16"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-32"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-12 ml-auto"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-24 ml-auto"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-24 ml-auto"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-24 ml-auto"></div></td>
+                  <td className="p-4 border-r border-gray-200"><div className="h-4 bg-gray-200 w-24 ml-auto"></div></td>
+                  <td className="p-4"><div className="h-8 bg-gray-200 w-20 mx-auto"></div></td>
+                </tr>
+              ))
+            ) : filteredMaterials.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-gray-500 italic font-bold">Tidak ada material ditemukan.</td>
+              </tr>
+            ) : filteredMaterials.map((item) => (
+              <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-swiss group">
+                <td className="p-4 border-r border-gray-200 font-mono text-xs">{item.code || "-"}</td>
+                <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
+                <td className="p-4 border-r border-gray-200 text-right font-mono">
+                  <span className={`${item.current_stock <= 10 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold' : ''}`}>
+                    {item.current_stock} {item.current_stock <= 10 && '⚠️'}
+                  </span>
+                </td>
+                <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
+                  {item.cost_price.toLocaleString("id-ID")}
+                </td>
+                <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-green-700">
+                  {item.price.toLocaleString("id-ID")}
+                </td>
+                <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-blue-700">
+                  {(item.current_stock * (item.cost_price || 0)).toLocaleString("id-ID")}
+                </td>
+                <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-yellow-600">
+                  {(item.current_stock * (item.price - (item.cost_price || 0))).toLocaleString("id-ID")}
+                </td>
+                <td className="p-4 text-center">
+                  <div className="flex justify-center gap-2">
+                    <button 
+                      onClick={() => { 
+                        setEditingId(item.id); 
+                        setFormData({name: item.name, code: item.code || "", cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)}); 
+                        setIsModalOpen(true); 
+                      }} 
+                      className="p-1.5 border border-black text-black hover:bg-black hover:text-white transition-swiss active-press hover-elevate"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(item.id)} 
+                      className="p-1.5 border border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-swiss active-press hover-elevate"
+                      title="Hapus"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-

@@ -42,6 +42,7 @@ export default function ReportsPage() {
   // Filter state
   const [selectedFilter, setSelectedFilter] = useState<string>("TODAY");
   const [customDate, setCustomDate] = useState<string>("");
+  const [customMonth, setCustomMonth] = useState<string>("");
 
   useEffect(() => {
     fetchData("karya_bahan");
@@ -85,12 +86,6 @@ export default function ReportsPage() {
     }
   }
 
-  // Get unique months for the filter dropdown
-  const monthYears = useMemo(() => {
-    const dates = allTransactions.map(t => format(new Date(t.created_at), "MMMM yyyy"));
-    return Array.from(new Set(dates)); // Unique
-  }, [allTransactions]);
-
   // Filtered transactions
   const filteredTransactions = useMemo(() => {
     const today = new Date();
@@ -110,9 +105,12 @@ export default function ReportsPage() {
     if (selectedFilter === "CUSTOM_DATE" && customDate) {
       return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === customDate);
     }
+    if (selectedFilter === "CUSTOM_MONTH" && customMonth) {
+      return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM") === customMonth);
+    }
     
-    return allTransactions.filter(t => format(new Date(t.created_at), "MMMM yyyy") === selectedFilter);
-  }, [allTransactions, selectedFilter, customDate]);
+    return allTransactions;
+  }, [allTransactions, selectedFilter, customDate, customMonth]);
 
   // Calculations for P&L Dashboard
   const outTransactions = filteredTransactions.filter(t => t.type === 'OUT');
@@ -138,7 +136,7 @@ export default function ReportsPage() {
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    const storeName = activeStore === 'bysca' ? 'BYSCA (Parfum)' : 'Karya Bahan';
+    const storeName = activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Karya Bahan';
     doc.text(`${storeName.toUpperCase()} - P&L Report`, 14, 22);
     
     doc.setFont("helvetica", "normal");
@@ -149,6 +147,7 @@ export default function ReportsPage() {
     else if (selectedFilter === "YESTERDAY") filterLabel = "Kemarin";
     else if (selectedFilter === "THIS_MONTH") filterLabel = "Bulan Ini";
     else if (selectedFilter === "CUSTOM_DATE") filterLabel = customDate ? format(new Date(customDate), "dd MMMM yyyy") : "Tanggal Spesifik";
+    else if (selectedFilter === "CUSTOM_MONTH") filterLabel = customMonth ? format(new Date(customMonth + "-01"), "MMMM yyyy") : "Bulan Spesifik";
     else if (selectedFilter === "ALL") filterLabel = "Semua Waktu";
 
     doc.text(`Periode: ${filterLabel}`, 14, 30);
@@ -217,29 +216,81 @@ export default function ReportsPage() {
 
     // Define columns
     sheet.columns = [
-      { header: "Tanggal", key: "date", width: 22 },
-      { header: "Tipe", key: "type", width: 15 },
-      { header: "Material", key: "material", width: 30 },
-      { header: "Quantity", key: "qty", width: 12 },
-      { header: "H. Modal/Pcs (Rp)", key: "modal", width: 20 },
-      { header: "H. Jual/Pcs (Rp)", key: "jual", width: 20 },
-      { header: "Total Transaksi (Rp)", key: "total", width: 22 },
-      { header: "Profit (Rp)", key: "profit", width: 18 }
+      { key: "no", width: 6 },
+      { key: "date", width: 22 },
+      { key: "type", width: 15 },
+      { key: "material", width: 30 },
+      { key: "qty", width: 12 },
+      { key: "modal", width: 20 },
+      { key: "jual", width: 20 },
+      { key: "total", width: 22 },
+      { key: "profit", width: 18 }
     ];
 
-    // Style header row
-    const headerRow = sheet.getRow(1);
+    // Determine filter label
+    let filterLabel = selectedFilter;
+    if (selectedFilter === "TODAY") filterLabel = "Hari Ini";
+    else if (selectedFilter === "YESTERDAY") filterLabel = "Kemarin";
+    else if (selectedFilter === "THIS_MONTH") filterLabel = "Bulan Ini";
+    else if (selectedFilter === "CUSTOM_DATE") filterLabel = customDate ? format(new Date(customDate), "dd MMMM yyyy") : "Tanggal Spesifik";
+    else if (selectedFilter === "CUSTOM_MONTH") filterLabel = customMonth ? format(new Date(customMonth + "-01"), "MMMM yyyy") : "Bulan Spesifik";
+    else if (selectedFilter === "ALL") filterLabel = "Semua Waktu";
+
+    const printDate = format(new Date(), "dd MMM yyyy, HH:mm");
+
+    // Row 1: Title Row
+    const titleRow = sheet.addRow(["LAPORAN KEUANGAN - KARYA BAHAN"]);
+    sheet.mergeCells(1, 1, 1, 9);
+    titleRow.height = 30;
+    const titleCell = titleRow.getCell(1);
+    titleCell.font = { bold: true, size: 16 };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Row 2: Subtitle Row
+    const subtitleRow = sheet.addRow([`Periode: ${filterLabel}  |  Dicetak pada: ${printDate}`]);
+    sheet.mergeCells(2, 1, 2, 9);
+    subtitleRow.height = 20;
+    const subtitleCell = subtitleRow.getCell(1);
+    subtitleCell.font = { size: 10, color: { argb: "FF555555" } };
+    subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Row 3: Empty row
+    sheet.addRow([]);
+
+    // Row 4: Header Row
+    const headerRow = sheet.addRow([
+      "No",
+      "Tanggal",
+      "Tipe",
+      "Material",
+      "Quantity",
+      "H. Modal/Pcs (Rp)",
+      "H. Jual/Pcs (Rp)",
+      "Total Transaksi (Rp)",
+      "Profit (Rp)"
+    ]);
+    headerRow.height = 24;
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FF000000" } };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
     });
 
-    filteredTransactions.forEach(t => {
+    // Freeze panes up to header row
+    sheet.views = [{ state: 'frozen', ySplit: 4 }];
+
+    filteredTransactions.forEach((t, index) => {
       const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
       const isBeli = t.type === 'IN';
       
       const row = sheet.addRow({
+        no: index + 1,
         date: format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss"),
         type: isBeli ? 'BELI (IN)' : 'JUAL (OUT)',
         material: t.materials?.name || "Unknown",
@@ -250,6 +301,17 @@ export default function ReportsPage() {
         profit: isBeli ? "-" : profit
       });
 
+      // Alignments: dates left-aligned, numbers right-aligned, text left-aligned
+      row.getCell("no").alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell("date").alignment = { vertical: 'middle', horizontal: 'left' };
+      row.getCell("type").alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell("material").alignment = { vertical: 'middle', horizontal: 'left' };
+      row.getCell("qty").alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell("modal").alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell("jual").alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
+      row.getCell("profit").alignment = { vertical: 'middle', horizontal: 'right' };
+
       // Styling based on type
       row.getCell("type").font = { color: { argb: isBeli ? "FF990000" : "FF006600" }, bold: true };
       
@@ -257,38 +319,84 @@ export default function ReportsPage() {
       row.getCell("total").font = { color: { argb: isBeli ? "FFCC0000" : "FF0000FF" }, bold: true };
       if (!isBeli) row.getCell("profit").font = { color: { argb: "FF009900" }, bold: true };
 
-      // Number formatting for currency columns
+      // Number formatting for currency and quantity columns
+      row.getCell("qty").numFmt = '#,##0';
       ['modal', 'jual', 'total', 'profit'].forEach(key => {
         const cell = row.getCell(key);
         if (typeof cell.value === 'number') {
           cell.numFmt = '#,##0';
         }
       });
+
+      // Borders on all cells and alternating row background color
+      for (let col = 1; col <= 9; col++) {
+        const cell = row.getCell(col);
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        if (index % 2 === 1) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: "FFF5F5F5" }
+          };
+        }
+      }
     });
 
     // Add empty row for spacing
     sheet.addRow({});
 
     // Totals Section
-    const totalSalesRow = sheet.addRow({ qty: "TOTAL PENJUALAN", total: totalSalesRevenue });
-    totalSalesRow.getCell("qty").font = { bold: true };
+    const totalSalesRow = sheet.addRow({ material: "TOTAL PENJUALAN", total: totalSalesRevenue });
+    const modalKeluarRow = sheet.addRow({ material: "MODAL KELUAR", total: -costRecovered });
+    const profitRow = sheet.addRow({ material: "PROFIT BERSIH", profit: realizedProfit });
+    const totalBeliRow = sheet.addRow({ material: "TOTAL PEMBELIAN", total: -totalPurchaseCost });
+
+    const summaryRows = [totalSalesRow, modalKeluarRow, profitRow, totalBeliRow];
+
+    summaryRows.forEach((row, index) => {
+      // Gray background and borders for summary rows (thick top border on the first summary row)
+      for (let col = 1; col <= 9; col++) {
+        const cell = row.getCell(col);
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: "FFF0F0F0" }
+        };
+        cell.border = {
+          top: { style: index === 0 ? 'thick' : 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      }
+
+      // Merge label across material + qty columns (col 4 and 5)
+      sheet.mergeCells(row.number, 4, row.number, 5);
+      const labelCell = row.getCell("material");
+      labelCell.font = { bold: true };
+      labelCell.alignment = { vertical: 'middle', horizontal: 'right' };
+    });
+
     totalSalesRow.getCell("total").font = { bold: true, color: { argb: "FF0000FF" } };
     totalSalesRow.getCell("total").numFmt = '#,##0';
+    totalSalesRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
 
-    const modalKeluarRow = sheet.addRow({ qty: "MODAL KELUAR", total: -costRecovered });
-    modalKeluarRow.getCell("qty").font = { bold: true };
     modalKeluarRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
     modalKeluarRow.getCell("total").numFmt = '#,##0';
+    modalKeluarRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
 
-    const profitRow = sheet.addRow({ qty: "PROFIT BERSIH", profit: realizedProfit });
-    profitRow.getCell("qty").font = { bold: true };
     profitRow.getCell("profit").font = { bold: true, color: { argb: "FF009900" } };
     profitRow.getCell("profit").numFmt = '#,##0';
+    profitRow.getCell("profit").alignment = { vertical: 'middle', horizontal: 'right' };
 
-    const totalBeliRow = sheet.addRow({ qty: "TOTAL PEMBELIAN", total: -totalPurchaseCost });
-    totalBeliRow.getCell("qty").font = { bold: true };
     totalBeliRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
     totalBeliRow.getCell("total").numFmt = '#,##0';
+    totalBeliRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
 
     // Generate and save
     const buffer = await workbook.xlsx.writeBuffer();
@@ -296,7 +404,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
       <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b-2 border-black pb-4">
         <div>
           <h1 className="text-3xl font-bold uppercase flex items-center gap-2">
@@ -309,7 +417,7 @@ export default function ReportsPage() {
           <button 
             onClick={exportPDF}
             disabled={loading || filteredTransactions.length === 0}
-            className="flex items-center gap-2 border border-black px-4 py-2 font-bold uppercase text-sm hover:bg-black hover:text-white transition-colors"
+            className="flex items-center gap-2 border border-black px-4 py-2 font-bold uppercase text-sm hover:bg-black hover:text-white transition-swiss hover-elevate active-press disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
             Export PDF
@@ -317,7 +425,7 @@ export default function ReportsPage() {
           <button 
             onClick={exportExcel}
             disabled={loading || filteredTransactions.length === 0}
-            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2 font-bold uppercase text-sm hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-2 border border-black bg-black text-white px-4 py-2 font-bold uppercase text-sm hover:bg-gray-800 transition-swiss hover-elevate active-press disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
             Export Excel
@@ -326,35 +434,46 @@ export default function ReportsPage() {
       </div>
 
       {/* Filter Section M-Banking Style */}
-      <div className="bg-gray-100 p-4 border border-black flex flex-wrap items-center gap-4">
+      <div className="bg-gray-100 p-4 border border-black flex flex-wrap items-center gap-4 transition-swiss hover:shadow-sm">
         <Calendar className="w-6 h-6 text-gray-500" />
         <div>
           <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih e-Statement (Periode)</label>
           <select 
             value={selectedFilter}
-            onChange={(e) => setSelectedFilter(e.target.value)}
-            className="bg-white border border-black px-3 py-2 text-sm font-bold w-64 focus:outline-none focus:ring-2 focus:ring-black"
+            onChange={(e) => {
+              setSelectedFilter(e.target.value);
+              if (e.target.value === "CUSTOM_DATE" && !customDate) setCustomDate(format(new Date(), "yyyy-MM-dd"));
+              if (e.target.value === "CUSTOM_MONTH" && !customMonth) setCustomMonth(format(new Date(), "yyyy-MM"));
+            }}
+            className="bg-white border border-black px-3 py-2 text-sm font-bold w-64 focus-ring cursor-pointer transition-swiss"
           >
             <option value="TODAY">Hari Ini</option>
             <option value="YESTERDAY">Kemarin</option>
-            <option value="CUSTOM_DATE">Tanggal Spesifik (Kalender)</option>
             <option value="THIS_MONTH">Bulan Ini</option>
+            <option value="CUSTOM_DATE">Tanggal Spesifik (Harian)</option>
+            <option value="CUSTOM_MONTH">Bulan Spesifik (Bulanan)</option>
             <option value="ALL">Semua Waktu (All Time)</option>
-            <optgroup label="Bulan Spesifik">
-              {monthYears.map(my => (
-                <option key={my} value={my}>{my}</option>
-              ))}
-            </optgroup>
           </select>
         </div>
         {selectedFilter === "CUSTOM_DATE" && (
-          <div>
+          <div className="animate-fade-in">
             <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Tanggal</label>
             <input 
               type="date"
-              className="bg-white border border-black px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-black"
+              className="bg-white border border-black px-3 py-2 text-sm font-bold focus-ring transition-swiss"
               value={customDate}
               onChange={(e) => setCustomDate(e.target.value)}
+            />
+          </div>
+        )}
+        {selectedFilter === "CUSTOM_MONTH" && (
+          <div className="animate-fade-in">
+            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Bulan</label>
+            <input 
+              type="month"
+              className="bg-white border border-black px-3 py-2 text-sm font-bold focus-ring transition-swiss"
+              value={customMonth}
+              onChange={(e) => setCustomMonth(e.target.value)}
             />
           </div>
         )}
@@ -363,8 +482,8 @@ export default function ReportsPage() {
       {/* P&L DASHBOARD */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Modal Keluar */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 transition-colors">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
             <DollarSign className="w-4 h-4 text-blue-600" />
             Modal Keluar
           </div>
@@ -375,9 +494,9 @@ export default function ReportsPage() {
         </div>
         
         {/* Card 2: Keuntungan Bersih */}
-        <div className="border border-black p-4 bg-black text-white relative overflow-hidden group">
+        <div className="border border-black p-4 bg-black text-white relative overflow-hidden group hover-elevate transition-swiss">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 text-green-400 group-hover:animate-bounce" />
             Keuntungan Bersih
           </div>
           <div className="text-2xl font-black text-green-400">
@@ -387,8 +506,8 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 3: Nilai Stok Mengendap */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 transition-colors">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-purple-600 transition-colors">
             <Package className="w-4 h-4 text-purple-600" />
             Sisa Nilai Stok (Aset)
           </div>
@@ -399,8 +518,8 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 4: Potensi Keuntungan */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 transition-colors">
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-yellow-600 transition-colors">
             <PiggyBank className="w-4 h-4 text-yellow-600" />
             Potensi Keuntungan
           </div>
@@ -441,7 +560,7 @@ export default function ReportsPage() {
                 filteredTransactions.map((t) => {
                   const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
                   return (
-                    <tr key={t.id} className="hover:bg-gray-50 border-b border-gray-200">
+                    <tr key={t.id} className="hover:bg-gray-50 border-b border-gray-200 transition-swiss">
                       <td className="p-4">
                         {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
                       </td>
@@ -477,7 +596,7 @@ export default function ReportsPage() {
                       <td className="p-4 text-center">
                         <button 
                           onClick={() => softDeleteTransaction(t.id)}
-                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          className="text-gray-400 hover:text-red-600 transition-swiss active-press"
                           title="Buang ke Tong Sampah"
                         >
                           <Trash2 className="w-5 h-5 mx-auto" />
