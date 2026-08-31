@@ -53,6 +53,7 @@ export default function LoginPage() {
               required
               className="w-full border-2 border-black p-3 focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
               placeholder="Masukkan email..."
+              onInput={(e) => { e.currentTarget.value = e.currentTarget.value.toLowerCase(); }}
             />
           </div>
           
