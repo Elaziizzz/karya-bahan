@@ -6,9 +6,9 @@ export function middleware(request: NextRequest) {
   const isLoginPage = request.nextUrl.pathname === '/login'
 
   // If not authenticated and not on login page, redirect to login
-  if (!isAuthenticated && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+  // if (!isAuthenticated && !isLoginPage) {
+  //   return NextResponse.redirect(new URL('/login', request.url))
+  // }
 
   // If authenticated and tries to go to login, redirect to dashboard
   if (isAuthenticated && isLoginPage) {

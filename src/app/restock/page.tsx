@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -361,7 +361,7 @@ export default function RestockPage() {
                     recentRestocks.map((t) => (
                       <tr key={t.id} className="hover:bg-gray-50 border-b border-gray-200 transition-swiss">
                         <td className="p-3">
-                          {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
+                          {format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy, HH:mm")}
                         </td>
                         <td className="p-3 font-medium">
                           {t.materials?.name || "Unknown"}
@@ -396,3 +396,4 @@ export default function RestockPage() {
     </div>
   );
 }
+

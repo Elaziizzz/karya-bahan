@@ -108,21 +108,21 @@ export default function ReportsPage() {
     
     if (selectedFilter === "ALL") return allTransactions;
     if (selectedFilter === "TODAY") {
-      return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
+      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
     }
     if (selectedFilter === "YESTERDAY") {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
+      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
     }
     if (selectedFilter === "THIS_MONTH") {
-      return allTransactions.filter(t => format(new Date(t.created_at), "MMMM yyyy") === format(today, "MMMM yyyy"));
+      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "MMMM yyyy") === format(today, "MMMM yyyy"));
     }
     if (selectedFilter === "CUSTOM_DATE" && customDate) {
-      return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === customDate);
+      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === customDate);
     }
     if (selectedFilter === "CUSTOM_MONTH" && customMonth) {
-      return allTransactions.filter(t => format(new Date(t.created_at), "yyyy-MM") === customMonth);
+      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === customMonth);
     }
     
     return allTransactions;
@@ -186,7 +186,7 @@ export default function ReportsPage() {
       const jualPcsStr = t.type === 'OUT' ? (t.total_price / (t.quantity || 1)).toLocaleString("id-ID") : '-';
 
       const rowData = [
-        format(new Date(t.created_at), "dd MMM yyyy HH:mm"),
+        format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy HH:mm"),
         typeStr,
         t.materials?.name || "Unknown",
         t.quantity.toString(),
@@ -311,7 +311,7 @@ export default function ReportsPage() {
       
       const row = sheet.addRow({
         no: index + 1,
-        date: format(new Date(t.created_at), "yyyy-MM-dd HH:mm:ss"),
+        date: format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd HH:mm:ss"),
         type: isBeli ? 'BELI (IN)' : 'JUAL (OUT)',
         material: t.materials?.name || "Unknown",
         qty: t.quantity,
@@ -643,7 +643,7 @@ export default function ReportsPage() {
                   return (
                     <tr key={t.id} className="hover:bg-gray-50 border-b border-gray-200 transition-swiss">
                       <td className="p-4">
-                        {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
+                        {format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy, HH:mm")}
                       </td>
                       <td className="p-4">
                         {t.type === 'IN' ? (
@@ -719,6 +719,7 @@ export default function ReportsPage() {
     </div>
   );
 }
+
 
 
 

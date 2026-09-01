@@ -132,7 +132,7 @@ export default function POSDashboard() {
     for (let i = 6; i >= 0; i--) {
       const d = subDays(today, i);
       const dateStr = format(d, 'yyyy-MM-dd');
-      const daySales = allTransactions.filter(t => t.type === 'OUT' && format(new Date(t.created_at), 'yyyy-MM-dd') === dateStr);
+      const daySales = allTransactions.filter(t => t.type === 'OUT' && (t.created_at ? format((t.created_at ? new Date(t.created_at) : new Date(0)), 'yyyy-MM-dd') : '') === dateStr);
       const total = daySales.reduce((sum, t) => sum + Number(t.total_price), 0);
       data.push({ date: format(d, 'dd MMM'), total });
     }
@@ -550,7 +550,7 @@ export default function POSDashboard() {
                   transactions.map((t) => (
                     <tr key={t.id} className="hover:bg-gray-50">
                       <td className="p-3 border-b border-gray-200">
-                        {format(new Date(t.created_at), "dd MMM yyyy, HH:mm")}
+                        {format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy, HH:mm")}
                       </td>
                       <td className="p-3 border-b border-gray-200 font-medium">
                         {t.materials?.name || "Unknown"}
@@ -580,6 +580,8 @@ export default function POSDashboard() {
     </div>
   );
 }
+
+
 
 
 
