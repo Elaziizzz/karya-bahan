@@ -8,7 +8,7 @@ export function Sidebar() {
   const pathname = usePathname();
   
   const isActive = (path: string) => {
-    return pathname === path ? "bg-black text-white px-4 py-2 font-bold translate-x-2 shadow-lg" : "text-gray-500 hover:text-black hover:bg-gray-50 px-4 py-2 font-medium hover:translate-x-1";
+    return pathname === path ? "bg-black text-white px-4 py-2 font-bold translate-x-2 shadow-[4px_4px_0_0_#3b82f6] rounded-md" : "text-gray-500 hover:text-black hover:bg-gray-50 px-4 py-2 font-medium hover:translate-x-1";
   };
   
   const isMobileActive = (path: string) => {
@@ -86,3 +86,4 @@ export function Sidebar() {
     </>
   );
 }
+

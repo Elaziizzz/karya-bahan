@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
 // Removed getCookie
 
 type Transaction = {
@@ -132,18 +132,7 @@ export default function ReportsPage() {
   // Potential Profit = sum of (current_stock * (price - cost_price))
   const potentialProfit = materials.reduce((sum, m) => sum + (m.current_stock * (m.price - (m.cost_price || 0))), 0);
 
-  // Data for Pie Chart (Top Items Sold)
-  const pieDataMap: Record<string, number> = {};
-  outTransactions.forEach(t => {
-    const name = t.materials?.name || 'Unknown';
-    pieDataMap[name] = (pieDataMap[name] || 0) + t.quantity;
-  });
-  const pieData = Object.entries(pieDataMap)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5); // top 5
   
-  const PIE_COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea'];
 
 
   const exportPDF = () => {
@@ -496,7 +485,7 @@ export default function ReportsPage() {
       {/* P&L DASHBOARD */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Modal Keluar */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
             <DollarSign className="w-4 h-4 text-blue-600" />
             Modal Keluar
@@ -508,7 +497,7 @@ export default function ReportsPage() {
         </div>
         
         {/* Card 2: Keuntungan Bersih */}
-        <div className="border border-black p-4 bg-black text-white relative overflow-hidden group hover-elevate transition-swiss">
+        <div className="border border-black p-4 bg-black text-white relative overflow-hidden group hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-green-400 group-hover:animate-bounce" />
             Keuntungan Bersih
@@ -520,7 +509,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 3: Nilai Stok Mengendap */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-purple-600 transition-colors">
             <Package className="w-4 h-4 text-purple-600" />
             Sisa Nilai Stok (Aset)
@@ -532,7 +521,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 4: Potensi Keuntungan */}
-        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss">
+        <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-yellow-600 transition-colors">
             <PiggyBank className="w-4 h-4 text-yellow-600" />
             Potensi Keuntungan
@@ -544,36 +533,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* DASHBOARD CHARTS */}
-      <div className="grid grid-cols-1 gap-4">
-        <div className="border border-black p-4 bg-white hover-elevate transition-swiss">
-          <div className="text-sm font-bold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
-            <PieChartIcon className="w-5 h-5" />
-            Grafik Produk Terlaris (Qty)
-          </div>
-          {pieData.length > 0 ? (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#000000" label={(entry) => entry.name}>
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [`${value} Pcs`, 'Terjual']} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-             <div className="h-64 w-full flex items-center justify-center text-gray-400 text-sm italic">
-               Belum ada data penjualan.
-             </div>
-          )}
-        </div>
-      </div>
-
       {/* Transaction Table */}
-      <div className="border border-black bg-white">
+      <div className="border-2 border-black bg-white shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl overflow-hidden mb-8">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
@@ -680,3 +641,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+
