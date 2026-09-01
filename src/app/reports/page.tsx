@@ -1,13 +1,14 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank } from "lucide-react";
+import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank, PieChart as PieChartIcon } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 // Removed getCookie
 
 type Transaction = {
@@ -131,12 +132,25 @@ export default function ReportsPage() {
   // Potential Profit = sum of (current_stock * (price - cost_price))
   const potentialProfit = materials.reduce((sum, m) => sum + (m.current_stock * (m.price - (m.cost_price || 0))), 0);
 
+  // Data for Pie Chart (Top Items Sold)
+  const pieDataMap: Record<string, number> = {};
+  outTransactions.forEach(t => {
+    const name = t.materials?.name || 'Unknown';
+    pieDataMap[name] = (pieDataMap[name] || 0) + t.quantity;
+  });
+  const pieData = Object.entries(pieDataMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5); // top 5
+  
+  const PIE_COLORS = ['#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea'];
+
 
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    const storeName = activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Karya Bahan';
+    const storeName = 'Karya Bahan';
     doc.text(`${storeName.toUpperCase()} - P&L Report`, 14, 22);
     
     doc.setFont("helvetica", "normal");
@@ -527,6 +541,34 @@ export default function ReportsPage() {
             +Rp {potentialProfit.toLocaleString("id-ID")}
           </div>
           <div className="text-[10px] text-gray-400 mt-2 uppercase">Bila semua sisa stok saat ini laku terjual</div>
+        </div>
+      </div>
+
+      {/* DASHBOARD CHARTS */}
+      <div className="grid grid-cols-1 gap-4">
+        <div className="border border-black p-4 bg-white hover-elevate transition-swiss">
+          <div className="text-sm font-bold text-black uppercase tracking-wider mb-4 flex items-center gap-2">
+            <PieChartIcon className="w-5 h-5" />
+            Grafik Produk Terlaris (Qty)
+          </div>
+          {pieData.length > 0 ? (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#000000" label={(entry) => entry.name}>
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} Pcs`, 'Terjual']} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+             <div className="h-64 w-full flex items-center justify-center text-gray-400 text-sm italic">
+               Belum ada data penjualan.
+             </div>
+          )}
         </div>
       </div>
 
