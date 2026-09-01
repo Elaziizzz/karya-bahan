@@ -358,7 +358,7 @@ export default function POSDashboard() {
               <BarChart data={last7DaysSales}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: any) => [Rp  + Number(value).toLocaleString("id-ID"), "Penjualan"]} />
+                <Tooltip formatter={(value: any) => ["Rp " + Number(value).toLocaleString("id-ID"), "Penjualan"]} />
                 <Bar dataKey="total" fill="#000000" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -580,6 +580,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 

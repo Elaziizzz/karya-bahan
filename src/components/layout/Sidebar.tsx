@@ -37,22 +37,22 @@ export function Sidebar() {
           </div>
 
           <nav className="flex flex-col gap-2">
-            <Link href="/" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/')}>
+            <Link href="/" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/')}`}>
               <ShoppingCart size={20} /> Kasir
             </Link>
-            <Link href="/restock" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/restock')}>
+            <Link href="/restock" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/restock')}`}>
               <PackagePlus size={20} /> Restock
             </Link>
-            <Link href="/materials" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/materials')}>
+            <Link href="/materials" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/materials')}`}>
               <Box size={20} /> Inventory
             </Link>
-            <Link href="/reports" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/reports')}>
+            <Link href="/reports" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/reports')}`}>
               <BarChart2 size={20} /> Reports
             </Link>
-            <Link href="/trash" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/trash') +  hover:text-red-600 hover:bg-red-50}>
+            <Link href="/trash" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/trash')} hover:text-red-600 hover:bg-red-50`}>
               <Trash2 size={20} /> Tong Sampah
             </Link>
-            <Link href="/settings" className={	ext-lg transition-swiss flex items-center gap-3  + isActive('/settings')}>
+            <Link href="/settings" className={`text-lg transition-swiss flex items-center gap-3 ${isActive('/settings')}`}>
               <Settings size={20} /> Settings
             </Link>
           </nav>
@@ -66,19 +66,19 @@ export function Sidebar() {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 w-full bg-white border-t-2 border-black z-50 flex justify-around items-center p-2 pb-safe shadow-[0_-4px_0_0_rgba(0,0,0,0.1)]">
-        <Link href="/" className={lex flex-col items-center p-2 transition-all  + isMobileActive('/')}>
+        <Link href="/" className={`flex flex-col items-center p-2 transition-all ${isMobileActive('/')}`}>
           <ShoppingCart size={24} />
           <span className="text-[10px] mt-1 uppercase tracking-wider">Kasir</span>
         </Link>
-        <Link href="/restock" className={lex flex-col items-center p-2 transition-all  + isMobileActive('/restock')}>
+        <Link href="/restock" className={`flex flex-col items-center p-2 transition-all ${isMobileActive('/restock')}`}>
           <PackagePlus size={24} />
           <span className="text-[10px] mt-1 uppercase tracking-wider">Restock</span>
         </Link>
-        <Link href="/materials" className={lex flex-col items-center p-2 transition-all  + isMobileActive('/materials')}>
+        <Link href="/materials" className={`flex flex-col items-center p-2 transition-all ${isMobileActive('/materials')}`}>
           <Box size={24} />
           <span className="text-[10px] mt-1 uppercase tracking-wider">Stock</span>
         </Link>
-        <Link href="/reports" className={lex flex-col items-center p-2 transition-all  + isMobileActive('/reports')}>
+        <Link href="/reports" className={`flex flex-col items-center p-2 transition-all ${isMobileActive('/reports')}`}>
           <BarChart2 size={24} />
           <span className="text-[10px] mt-1 uppercase tracking-wider">Laporan</span>
         </Link>
@@ -86,4 +86,3 @@ export function Sidebar() {
     </>
   );
 }
-
