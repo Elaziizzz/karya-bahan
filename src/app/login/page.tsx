@@ -29,7 +29,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black absolute inset-0 z-50 overflow-hidden">
       {/* 3D Interactive Background */}
-      <iframe src="/storm.html" className="absolute inset-0 w-full h-full border-none z-0" title="Interactive Background" />
+      <iframe src="/galaxy.html" className="absolute inset-0 w-full h-full border-none z-0" title="Interactive Background" />
       
       <div className="relative z-10 max-w-md w-full bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_rgba(255,255,255,1)]">
         <div className="flex justify-center mb-6">
