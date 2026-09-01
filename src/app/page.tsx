@@ -1,9 +1,11 @@
 ﻿"use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X } from "lucide-react";
+import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X, BarChart2 } from "lucide-react";
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { subDays } from "date-fns";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 
@@ -46,9 +48,7 @@ export default function POSDashboard() {
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initialBudget, setInitialBudget] = useState<number>(0);
-  const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [tempBudget, setTempBudget] = useState("");
+
   const [activeStore] = useState<string>("karya_bahan");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -80,12 +80,7 @@ export default function POSDashboard() {
       })
       .subscribe();
 
-    const savedBudget = localStorage.getItem(`karyabahan_initial_budget_bysca`);
-    if (savedBudget) {
-      setInitialBudget(Number(savedBudget));
-    } else {
-      setInitialBudget(0);
-    }
+
 
     return () => {
       supabase.removeChannel(materialSubscription);
@@ -93,13 +88,7 @@ export default function POSDashboard() {
     };
   }, []);
 
-  function saveBudget(e: React.FormEvent) {
-    e.preventDefault();
-    const val = Number(tempBudget);
-    setInitialBudget(val);
-    localStorage.setItem(`karyabahan_initial_budget_${activeStore}`, val.toString());
-    setIsEditingBudget(false);
-  }
+
 
   async function fetchData(store: string) {
     await fetchMaterials(store);
@@ -136,10 +125,19 @@ export default function POSDashboard() {
 
   const selectedMaterial = materials.find((m) => m.id === selectedMaterialId);
   
-  const totalRevenue = allTransactions.filter(t => t.type === 'OUT').reduce((sum, t) => sum + Number(t.total_price), 0);
-  const totalExpense = allTransactions.filter(t => t.type === 'IN').reduce((sum, t) => sum + Number(t.total_price), 0);
-  const netBalance = totalRevenue - totalExpense;
-  const currentBudget = initialBudget + netBalance;
+  // Calculate last 7 days sales
+  const last7DaysSales = useMemo(() => {
+    const data = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = subDays(today, i);
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const daySales = allTransactions.filter(t => t.type === 'OUT' && format(new Date(t.created_at), 'yyyy-MM-dd') === dateStr);
+      const total = daySales.reduce((sum, t) => sum + Number(t.total_price), 0);
+      data.push({ date: format(d, 'dd MMM'), total });
+    }
+    return data;
+  }, [allTransactions]);
 
   const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
@@ -349,62 +347,21 @@ export default function POSDashboard() {
 
       {/* Main Content (Hidden during print) */}
       <div className="print:hidden space-y-12">
-        {/* Financial Summary */}
+        {/* Sales Chart */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
-            <Wallet className="w-6 h-6" />
-            FINANCIAL SUMMARY
+          <h2 className="text-xl font-bold mb-4 border-b-2 border-black pb-2 flex items-center gap-2">
+            <BarChart2 className="w-5 h-5" />
+            Grafik Penjualan (7 Hari Terakhir)
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="border border-black p-6 bg-white hover-elevate transition-swiss group">
-              <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
-                <ArrowUpRight className="w-4 h-4 text-green-600" />
-                Total Penjualan (Revenue)
-              </div>
-              <div className="text-3xl font-mono font-bold text-green-700">
-                Rp <AnimatedNumber value={totalRevenue} />
-              </div>
-            </div>
-            <div className="border border-black p-6 bg-white hover-elevate transition-swiss group">
-              <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
-                <ArrowDownRight className="w-4 h-4 text-red-600" />
-                Total Pembelian (Expense)
-              </div>
-              <div className="text-3xl font-mono font-bold text-red-700">
-                Rp <AnimatedNumber value={totalExpense} />
-              </div>
-            </div>
-            <div className="border border-black p-6 bg-black text-white relative hover-elevate transition-swiss">
-              <div className="text-sm font-bold uppercase text-gray-400 mb-2 flex justify-between items-center">
-                <span>Sisa Saldo Kas (Budget)</span>
-                <button onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }} className="text-xs border border-gray-600 px-2 py-1 hover:bg-gray-800 transition-colors active-press">
-                  Set Modal Awal
-                </button>
-              </div>
-              
-              {isEditingBudget ? (
-                <form onSubmit={saveBudget} className="flex gap-2 mt-2 animate-fade-in">
-                  <input 
-                    type="number" 
-                    className="flex-1 bg-transparent border-b border-white text-white focus:outline-none focus:border-gray-400 transition-colors" 
-                    value={tempBudget}
-                    onChange={e => setTempBudget(e.target.value)}
-                    placeholder="Modal Awal"
-                    autoFocus
-                  />
-                  <button type="submit" className="text-xs bg-white text-black px-2 font-bold uppercase hover:bg-gray-200 transition-colors active-press">Save</button>
-                  <button type="button" onClick={() => setIsEditingBudget(false)} className="text-xs text-gray-400 px-2 hover:text-white transition-colors">X</button>
-                </form>
-              ) : (
-                <div className="text-3xl font-mono font-bold">
-                  Rp <AnimatedNumber value={currentBudget} />
-                </div>
-              )}
-              
-              <div className="text-xs text-gray-500 mt-2">
-                (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
-              </div>
-            </div>
+          <div className="h-48 w-full border-2 border-black bg-white shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl p-4 mb-8">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={last7DaysSales}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value: any) => [Rp  + Number(value).toLocaleString("id-ID"), "Penjualan"]} />
+                <Bar dataKey="total" fill="#000000" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -623,4 +580,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
+
+
 

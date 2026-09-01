@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank, PieChart as PieChartIcon } from "lucide-react";
+import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank, Wallet, ArrowDownRight, ArrowUpRight, X } from "lucide-react";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from 'exceljs';
@@ -45,9 +46,23 @@ export default function ReportsPage() {
   const [customDate, setCustomDate] = useState<string>("");
   const [customMonth, setCustomMonth] = useState<string>("");
 
+  const [initialBudget, setInitialBudget] = useState<number>(0);
+  const [isEditingBudget, setIsEditingBudget] = useState(false);
+  const [tempBudget, setTempBudget] = useState("");
+
   useEffect(() => {
     fetchData("karya_bahan");
+    const savedBudget = localStorage.getItem(`karyabahan_initial_budget_karya_bahan`);
+    if (savedBudget) setInitialBudget(Number(savedBudget));
   }, []);
+
+  function saveBudget(e: React.FormEvent) {
+    e.preventDefault();
+    const val = Number(tempBudget);
+    setInitialBudget(val);
+    localStorage.setItem(`karyabahan_initial_budget_karya_bahan`, val.toString());
+    setIsEditingBudget(false);
+  }
 
   async function fetchData(store: string) {
     setLoading(true);
@@ -132,7 +147,9 @@ export default function ReportsPage() {
   // Potential Profit = sum of (current_stock * (price - cost_price))
   const potentialProfit = materials.reduce((sum, m) => sum + (m.current_stock * (m.price - (m.cost_price || 0))), 0);
 
-  
+  const netBalance = totalSalesRevenue - totalPurchaseCost;
+  const currentBudget = initialBudget + netBalance;
+
 
 
   const exportPDF = () => {
@@ -482,6 +499,67 @@ export default function ReportsPage() {
         )}
       </div>
 
+            {/* Financial Summary */}
+      <div>
+        <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
+          <Wallet className="w-6 h-6" />
+          FINANCIAL SUMMARY
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="border-2 border-black p-6 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
+            <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
+              <ArrowUpRight className="w-4 h-4 text-green-600" />
+              Total Penjualan (Revenue)
+            </div>
+            <div className="text-3xl font-mono font-bold text-green-700">
+              Rp <AnimatedNumber value={totalSalesRevenue} />
+            </div>
+          </div>
+          <div className="border-2 border-black p-6 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
+            <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
+              <ArrowDownRight className="w-4 h-4 text-red-600" />
+              Total Pembelian (Expense)
+            </div>
+            <div className="text-3xl font-mono font-bold text-red-700">
+              Rp <AnimatedNumber value={totalPurchaseCost} />
+            </div>
+          </div>
+          <div className="border-2 border-black p-6 bg-black text-white relative hover-elevate transition-swiss shadow-[6px_6px_0_0_#3b82f6] rounded-xl">
+            <div className="text-sm font-bold uppercase text-gray-400 mb-2 flex justify-between items-center">
+              <span>Sisa Saldo Kas (Budget)</span>
+              <button onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }} className="text-xs border border-gray-600 px-2 py-1 hover:bg-gray-800 transition-colors active-press rounded">
+                Set Modal Awal
+              </button>
+            </div>
+            
+            {isEditingBudget ? (
+              <form onSubmit={saveBudget} className="flex gap-2 mt-2 animate-fade-in">
+                <input 
+                  type="number" 
+                  className="flex-1 bg-transparent border-b border-white text-white focus:outline-none focus:border-gray-400 transition-colors" 
+                  value={tempBudget}
+                  onChange={(e) => setTempBudget(e.target.value)}
+                  placeholder="Modal Awal"
+                  autoFocus
+                />
+                <button type="submit" className="text-xs bg-white text-black px-2 font-bold uppercase hover:bg-gray-200 transition-colors active-press rounded">Save</button>
+                <button type="button" onClick={() => setIsEditingBudget(false)} className="text-xs text-gray-400 px-2 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </form>
+            ) : (
+              <div className="text-3xl font-mono font-bold">
+                Rp <AnimatedNumber value={currentBudget} />
+              </div>
+            )}
+            
+            <div className="text-xs text-gray-500 mt-2">
+              (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* P&L DASHBOARD */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Modal Keluar */}
@@ -641,5 +719,7 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+
 
 
