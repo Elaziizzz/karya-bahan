@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -36,6 +36,7 @@ export default function RestockPage() {
   
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [buyMode, setBuyMode] = useState<'ecer' | 'grosir'>('ecer');
   const [costPrice, setCostPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [transactionDate, setTransactionDate] = useState("");
@@ -143,12 +144,12 @@ export default function RestockPage() {
     }
   };
 
-    async function handleSubmit(e: React.FormEvent) {
+        async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedMaterialId || quantity === "" || Number(quantity) <= 0 || costPrice === "" || Number(costPrice) <= 0) return;
 
     let multiplier = 1;
-    if (selectedMaterial) {
+    if (selectedMaterial && buyMode === 'grosir') {
       const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
       if (match) multiplier = Number(match[2]);
     }
@@ -290,19 +291,48 @@ export default function RestockPage() {
                 )}
               </div>
 
-              {/* Quantity */}
+                            {/* Quantity */}
               <div>
                 <label className="block text-xs font-bold mb-2 uppercase tracking-wide">Quantity</label>
-                <input
-                  ref={qtyInputRef}
-                  type="number"
-                  min="1"
-                  className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
-                  placeholder="Jumlah barang"
-                  required
-                />
+                {(() => {
+                  let isPack = false;
+                  let packName = '';
+                  let baseUnit = 'Pcs';
+                  if (selectedMaterial) {
+                    const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+                    if (match) {
+                      isPack = true;
+                      packName = match[1].trim();
+                      baseUnit = match[3].trim();
+                    } else {
+                      const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+                      if (baseMatch) baseUnit = baseMatch[1].trim();
+                    }
+                  }
+
+                  return (
+                    <>
+                      <div className="flex border border-black mb-3">
+                        <button type="button" onClick={() => setBuyMode('ecer')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${buyMode === 'ecer' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                          Eceran {selectedMaterial ? `(${baseUnit})` : ''}
+                        </button>
+                        <button type="button" onClick={() => setBuyMode('grosir')} disabled={selectedMaterial && !isPack} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${buyMode === 'grosir' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'} disabled:opacity-50 disabled:cursor-not-allowed`} title={selectedMaterial && !isPack ? "Barang ini tidak memiliki settingan Grosir" : ""}>
+                          Grosir {isPack ? `(${packName})` : '(Dus/Pack)'}
+                        </button>
+                      </div>
+                      <input
+                        ref={qtyInputRef}
+                        type="number"
+                        min="1"
+                        className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                        placeholder={isPack && buyMode === 'grosir' ? `Berapa ${packName}?` : `Jumlah ${baseUnit}`}
+                        required
+                      />
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Cost Price */}
@@ -412,6 +442,9 @@ export default function RestockPage() {
     </div>
   );
 }
+
+
+
 
 
 

@@ -482,12 +482,14 @@ export default function POSDashboard() {
 
                     return (
                       <>
-                        {isPack && (
-                          <div className="flex border border-black mb-3">
-                            <button type="button" onClick={() => setBuyMode('ecer')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${buyMode === 'ecer' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Eceran ({baseUnit})</button>
-                            <button type="button" onClick={() => setBuyMode('grosir')} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${buyMode === 'grosir' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Grosir ({packName})</button>
-                          </div>
-                        )}
+                        <div className="flex border border-black mb-3">
+                          <button type="button" onClick={() => setBuyMode('ecer')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${buyMode === 'ecer' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                            Eceran {selectedMaterial ? `(${baseUnit})` : ''}
+                          </button>
+                          <button type="button" onClick={() => setBuyMode('grosir')} disabled={selectedMaterial && !isPack} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${buyMode === 'grosir' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'} disabled:opacity-50 disabled:cursor-not-allowed`} title={selectedMaterial && !isPack ? "Barang ini tidak memiliki settingan Grosir" : ""}>
+                            Grosir {isPack ? `(${packName})` : '(Dus/Pack)'}
+                          </button>
+                        </div>
                         <input
                           ref={quantityInputRef}
                           type="number"
