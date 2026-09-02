@@ -37,7 +37,7 @@ export default function MaterialsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', buyQty: '', packCost: '',
     name: "", unit_info: "",
     code: "",
     cost_price: "",
@@ -46,6 +46,40 @@ export default function MaterialsPage() {
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  function openAddModal() {
+    setEditingId(null);
+    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', buyQty: '', packCost: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
+    setIsModalOpen(true);
+  }
+
+  function openEditModal(item: Material) {
+    setEditingId(item.id);
+    let baseUnit = 'Pcs';
+    let hasPack = false;
+    let packName = 'Pack';
+    let packMultiplier = '';
+    const cleanName = item.name.replace(/\s*-\s*\[(.*?)\]$/, '');
+    const unitMatch = item.name.match(/\s*-\s*\[(.*?)\]$/);
+    if (unitMatch) {
+      const info = unitMatch[1];
+      const packMatch = info.match(/1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)$/);
+      if (packMatch) {
+        hasPack = true;
+        packName = packMatch[1].trim();
+        packMultiplier = packMatch[2];
+        baseUnit = packMatch[3].trim();
+      } else {
+        baseUnit = info.trim();
+      }
+    }
+    setFormData({
+      baseUnit, hasPack, packName, packMultiplier, buyQty: '', packCost: '',
+      name: cleanName, unit_info: '', code: item.code || '',
+      cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)
+    });
+    setIsModalOpen(true);
+  }
 
   // Smart Import States
   const [showImportSection, setShowImportSection] = useState(false);
@@ -82,11 +116,18 @@ export default function MaterialsPage() {
     e.preventDefault();
     setLoading(true);
     
+    let finalName = formData.name;
+    if (formData.hasPack && formData.packName && formData.packMultiplier) {
+      finalName = `${formData.name} - [1 ${formData.packName} = ${formData.packMultiplier} ${formData.baseUnit}]`;
+    } else if (formData.baseUnit && formData.baseUnit !== 'Pcs') {
+      finalName = `${formData.name} - [${formData.baseUnit}]`;
+    }
+
     if (editingId) {
       const { error } = await supabase
         .from("materials")
         .update({
-            name: formData.unit_info ? formData.name + ' - [' + formData.unit_info + ']' : formData.name,
+          name: finalName,
           code: formData.code || null,
           cost_price: Number(formData.cost_price),
           price: Number(formData.price),
@@ -103,23 +144,32 @@ export default function MaterialsPage() {
         fetchMaterials(activeStore);
       }
     } else {
-      const { error } = await supabase.from("materials").insert([
+      const { data: newMaterial, error } = await supabase.from("materials").insert([
         {
-            name: formData.unit_info ? formData.name + ' - [' + formData.unit_info + ']' : formData.name,
+          name: finalName,
           code: formData.code || null,
           current_stock: Number(formData.current_stock),
           cost_price: Number(formData.cost_price),
           price: Number(formData.price),
           store: activeStore,
         },
-      ]);
+      ]).select();
 
       if (error) {
-        showToast("Error menyimpan material: " + error.message, "error");
-      } else {
-        showToast("Material berhasil disimpan!", "success");
+        showToast("Error menambah material: " + error.message, "error");
+      } else if (newMaterial && newMaterial.length > 0) {
+        if (Number(formData.current_stock) > 0 && Number(formData.cost_price) > 0) {
+          await supabase.from("transactions").insert([{
+            material_id: newMaterial[0].id,
+            type: "IN",
+            quantity: Number(formData.current_stock),
+            cost_price: Number(formData.cost_price),
+            total_price: Number(formData.cost_price) * Number(formData.current_stock),
+            store: activeStore
+          }]);
+        }
+        showToast("Material berhasil ditambahkan!", "success");
         setIsModalOpen(false);
-        setFormData({ name: "", unit_info: "", code: "", cost_price: "", price: "", current_stock: "" });
         fetchMaterials(activeStore);
       }
     }
@@ -354,9 +404,7 @@ export default function MaterialsPage() {
           </button>
           <button
             onClick={() => {
-              setEditingId(null);
-              setFormData({ name: "", unit_info: "", code: "", cost_price: "", price: "", current_stock: "" });
-              setIsModalOpen(true);
+              openAddModal();
             }}
             className="bg-black text-white px-6 py-2 font-bold uppercase hover:bg-gray-800 transition-swiss active-press hover-elevate flex-1 sm:flex-none justify-center"
           >
@@ -530,40 +578,115 @@ export default function MaterialsPage() {
               <Edit2 className="w-5 h-5" />
               {editingId ? "Edit Material" : "Tambah Material"}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Opsional)</label>
-                <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
-                <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-              </div>
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase text-gray-500">Info Kemasan / Satuan (Opsional)</label>
-                <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" placeholder="Cth: 1 Dus = 15 Pcs" value={formData.unit_info} onChange={(e) => setFormData({...formData, unit_info: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold mb-1 uppercase">Harga Beli</label>
-                  <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.cost_price} onChange={(e) => setFormData({...formData, cost_price: e.target.value})} />
+                          <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1 pb-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Ops)</label>
+                    <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
+                    <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Semen, PVC..." />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold mb-1 uppercase">Harga Jual</label>
-                  <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
+
+                <div className="bg-gray-50 border border-gray-300 p-3 mb-4">
+                  <label className="block text-xs font-bold mb-2 uppercase text-blue-800">1. Pengaturan Satuan & Kemasan</label>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <label className="block text-xs font-bold mb-1 uppercase">Satuan Dasar</label>
+                      <select className="w-full border border-black p-2 bg-white" value={formData.baseUnit} onChange={(e) => setFormData({...formData, baseUnit: e.target.value})}>
+                        <option value="Pcs">Pcs</option>
+                        <option value="Lembar">Lembar</option>
+                        <option value="Batang">Batang</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Biji">Biji</option>
+                        <option value="Meter">Meter</option>
+                        <option value="Roll">Roll</option>
+                        <option value="Zak">Zak / Sak</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end pb-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" className="w-4 h-4 accent-black" checked={formData.hasPack} onChange={(e) => setFormData({...formData, hasPack: e.target.checked})} />
+                        <span className="text-xs font-bold uppercase">Bisa Kemasan/Grosir?</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {formData.hasPack && (
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-300">
+                      <div>
+                        <label className="block text-xs font-bold mb-1 uppercase">Nama Kemasan</label>
+                        <select className="w-full border border-black p-2 bg-white" value={formData.packName} onChange={(e) => setFormData({...formData, packName: e.target.value})}>
+                          <option value="Pack">Pack</option>
+                          <option value="Dus">Dus / Box</option>
+                          <option value="Karton">Karton</option>
+                          <option value="Roll">Roll</option>
+                          <option value="Sak">Sak</option>
+                          <option value="Bal">Bal</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold mb-1 uppercase">1 {formData.packName} = Berapa {formData.baseUnit}?</label>
+                        <input type="number" required min="1" className="w-full border border-black p-2" value={formData.packMultiplier} onChange={(e) => setFormData({...formData, packMultiplier: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 15" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold mb-1 uppercase">Stok</label>
-                <input type="number" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.current_stock} onChange={(e) => setFormData({...formData, current_stock: e.target.value})} />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-200 p-2 font-bold uppercase hover:bg-gray-300 transition-swiss active-press">Batal</button>
-                <button type="submit" disabled={loading} className="flex-1 bg-black text-white p-2 font-bold uppercase hover:bg-gray-800 transition-swiss hover-elevate active-press flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4" /> Simpan
-                </button>
-              </div>
-            </form>
+
+                <div className="bg-gray-50 border border-gray-300 p-3 mb-4">
+                  <label className="block text-xs font-bold mb-2 uppercase text-green-800">2. Pengaturan Stok & Harga</label>
+                  
+                  {(!editingId && formData.hasPack && formData.packMultiplier) ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold mb-1 uppercase">Beli Berapa {formData.packName}?</label>
+                          <input type="number" required min="0" className="w-full border border-black p-2" value={formData.buyQty} onChange={(e) => {
+                            const val = e.target.value.replace(/^0+/, '');
+                            const total = Number(val) * Number(formData.packMultiplier);
+                            setFormData({...formData, buyQty: val, current_stock: String(total)});
+                          }} placeholder="Cth: 10" />
+                          <div className="text-[10px] text-gray-600 mt-1">Total: <b>{formData.current_stock || 0} {formData.baseUnit}</b></div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold mb-1 uppercase">Harga Modal / {formData.packName}</label>
+                          <input type="number" required min="0" className="w-full border border-black p-2" value={formData.packCost} onChange={(e) => {
+                            const val = e.target.value.replace(/^0+/, '');
+                            const perItem = Number(formData.packMultiplier) > 0 ? Math.round(Number(val) / Number(formData.packMultiplier)) : 0;
+                            setFormData({...formData, packCost: val, cost_price: String(perItem)});
+                          }} placeholder="Cth: 150000" />
+                          <div className="text-[10px] text-gray-600 mt-1">Modal / {formData.baseUnit}: <b>Rp {Number(formData.cost_price).toLocaleString('id-ID')}</b></div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block text-xs font-bold mb-1 uppercase">Stok ({formData.baseUnit})</label>
+                        <input type="number" required min="0" className="w-full border border-black p-2" value={formData.current_stock} onChange={(e) => setFormData({...formData, current_stock: e.target.value.replace(/^0+/, '')})} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold mb-1 uppercase">Harga Modal / {formData.baseUnit}</label>
+                        <input type="number" required min="0" className="w-full border border-black p-2" value={formData.cost_price} onChange={(e) => setFormData({...formData, cost_price: e.target.value.replace(/^0+/, '')})} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 pt-3 border-t border-gray-300">
+                    <label className="block text-xs font-bold mb-1 uppercase text-blue-600">Harga Jual ke Customer / {formData.baseUnit}</label>
+                    <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 12000" />
+                  </div>
+                </div>
+
+                <div className="flex gap-4 pt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-200 p-3 font-bold uppercase hover:bg-gray-300 transition-swiss active-press">Batal</button>
+                  <button type="submit" disabled={loading} className="flex-1 bg-black text-white p-3 font-bold uppercase hover:bg-gray-800 transition-swiss hover-elevate active-press flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" /> Simpan
+                  </button>
+                </div>
+              </form>
           </div>
         </div>
       )}
@@ -607,7 +730,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 10 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold' : ''}`}>
-                    {item.current_stock} {item.current_stock <= 10 && 'Ã¢Å¡Â Ã¯Â¸Â'}
+                    {item.current_stock} {item.current_stock <= 10 && 'ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â'}
                   </span>
                 </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
@@ -626,9 +749,7 @@ export default function MaterialsPage() {
                   <div className="flex justify-center gap-2">
                     <button 
                       onClick={() => { 
-                        setEditingId(item.id); 
-                        setFormData({name: item.name.replace(/\s*-\s*\[(.*?)\]$/, ''), unit_info: item.name.match(/\s*-\s*\[(.*?)\]$/)?.[1] || "", code: item.code || "", cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)}); 
-                        setIsModalOpen(true); 
+                        openEditModal(item); 
                       }} 
                       className="p-1.5 border border-black text-black hover:bg-black hover:text-white transition-swiss active-press hover-elevate"
                       title="Edit"
@@ -652,6 +773,12 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
@@ -32,7 +32,7 @@ type Transaction = {
   };
 };
 
-type CartItem = { pack_display?: string; custom_price?: number;
+type CartItem = { custom_price?: number;
   material: Material;
   quantity: number;
   subtotal: number;
@@ -47,9 +47,6 @@ export default function POSDashboard() {
   
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [qtyMode, setQtyMode] = useState<'pcs' | 'pack'>('pcs');
-  const [packQty, setPackQty] = useState("");
-  const [packMultiplier, setPackMultiplier] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [activeStore] = useState<string>("karya_bahan");
@@ -146,20 +143,9 @@ export default function POSDashboard() {
 
   function addToCart(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMaterial) return;
+    if (!selectedMaterial || !quantity || Number(quantity) <= 0) return;
 
-    let qtyNum = 0;
-    let packDisplay: string | undefined = undefined;
-
-    if (qtyMode === 'pack') {
-      if (!packQty || Number(packQty) <= 0 || !packMultiplier || Number(packMultiplier) <= 0) return;
-      qtyNum = Number(packQty) * Number(packMultiplier);
-      packDisplay = `${packQty} Pack (${packMultiplier} Pcs/Pack)`;
-    } else {
-      if (!quantity || Number(quantity) <= 0) return;
-      qtyNum = Number(quantity);
-    }
-
+    const qtyNum = Number(quantity);
     if (qtyNum > selectedMaterial.current_stock) {
       showToast(`Stok tidak cukup! (Sisa: ${selectedMaterial.current_stock})`, "error");
       return;
@@ -175,7 +161,7 @@ export default function POSDashboard() {
             : item
         );
       }
-      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price, pack_display: packDisplay }];
+      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price }];
     });
 
     setSelectedMaterialId("");
@@ -262,18 +248,6 @@ export default function POSDashboard() {
   const selectMaterial = (m: Material) => {
     if (m.current_stock <= 0) return;
     setSelectedMaterialId(m.id);
-    const match = m.name.match(/-\s*\[(.*?)\]$/);
-    if (match) {
-      const numbers = match[1].match(/\d+/g);
-      if (numbers && numbers.length > 0) {
-        setPackMultiplier(numbers[numbers.length - 1]);
-      }
-    } else {
-      setPackMultiplier("");
-    }
-    setQtyMode('pcs');
-    setQuantity("");
-    setPackQty("");
     setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
@@ -355,10 +329,7 @@ export default function POSDashboard() {
                     <tr key={idx}>
                       <td className="border border-black p-2 text-center">{idx + 1}</td>
                       <td className="border border-black p-2 font-medium">{item.material.code ? []  : ''}{item.material.name}</td>
-                      <td className="border border-black p-2 text-center font-bold">
-                        {item.quantity}
-                        {item.pack_display && <div className="text-[10px] font-normal">{item.pack_display}</div>}
-                      </td>
+                      <td className="border border-black p-2 text-center font-bold">{item.quantity}</td>
                       <td className="border border-black p-2 text-right">{(item.custom_price ?? item.material.price).toLocaleString("id-ID")}</td>
                       <td className="border border-black p-2 text-right font-bold">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
@@ -471,56 +442,27 @@ export default function POSDashboard() {
 
               <div>
                 <label className="block text-sm font-bold mb-2 uppercase">Quantity</label>
-                <div className="flex border border-black mb-3">
-                  <button type="button" onClick={() => setQtyMode('pcs')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${qtyMode === 'pcs' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Eceran (Pcs)</button>
-                  <button type="button" onClick={() => setQtyMode('pack')} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${qtyMode === 'pack' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Grosir (Pack/Dus)</button>
-                </div>
-                {qtyMode === 'pcs' ? (
-                  <input
-                    ref={quantityInputRef}
-                    type="number"
-                    min="1"
-                    max={selectedMaterial?.current_stock || undefined}
-                    className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
-                    placeholder="Jumlah Pcs"
-                  />
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      ref={quantityInputRef}
-                      type="number"
-                      min="1"
-                      className="w-1/2 border border-black p-3 bg-transparent focus-ring transition-swiss"
-                      value={packQty}
-                      onChange={(e) => setPackQty(e.target.value.replace(/^0+(?=\d)/, ''))}
-                      placeholder="Jml Pack"
-                    />
-                    <div className="flex items-center font-bold">x</div>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-1/2 border border-black p-3 bg-transparent focus-ring transition-swiss"
-                      value={packMultiplier}
-                      onChange={(e) => setPackMultiplier(e.target.value.replace(/^0+(?=\d)/, ''))}
-                      placeholder="Isi per pack"
-                    />
-                  </div>
-                )}
+                <input
+                  ref={quantityInputRef}
+                  type="number"
+                  min="1"
+                  max={selectedMaterial?.current_stock || undefined}
+                  className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  placeholder="Jumlah barang"
+                  required
+                />
                 {selectedMaterial && (
-                  <div className="mt-2 text-xs text-gray-500 font-mono">
+                  <div className="mt-1 text-xs text-gray-500 font-mono">
                     Harga: Rp {selectedMaterial.price.toLocaleString("id-ID")} | Max Qty: {selectedMaterial.current_stock}
-                    {qtyMode === 'pack' && packQty && packMultiplier && (
-                      <div className="text-blue-600 font-bold mt-1">Total Masuk Keranjang: {Number(packQty) * Number(packMultiplier)} Pcs</div>
-                    )}
                   </div>
                 )}
               </div>
 
               <button
                 type="submit"
-                disabled={!selectedMaterialId || (qtyMode === 'pcs' ? (!quantity || Number(quantity) <= 0) : (!packQty || Number(packQty) <= 0 || !packMultiplier || Number(packMultiplier) <= 0))}
+                disabled={!selectedMaterialId || quantity === "" || Number(quantity) <= 0}
                 className="w-full border-2 border-black bg-white text-black p-4 font-bold uppercase tracking-wider hover:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
               >
                 TAMBAH KE KERANJANG
@@ -561,10 +503,7 @@ export default function POSDashboard() {
                             {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
                             {item.material.name}
                           </td>
-                          <td className="p-3 text-right font-mono">
-                              {item.quantity}
-                              {item.pack_display && <div className="text-[10px] text-gray-500 whitespace-nowrap">{item.pack_display}</div>}
-                            </td>
+                          <td className="p-3 text-right font-mono">{item.quantity}</td>
                           <td className="p-3 text-right font-mono">
                             <div className="flex items-center justify-end gap-1">
                               <span>Rp</span>
@@ -668,10 +607,6 @@ export default function POSDashboard() {
     </div>
   );
 }
-
-
-
-
 
 
 

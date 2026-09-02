@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -36,9 +36,6 @@ export default function RestockPage() {
   
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [qtyMode, setQtyMode] = useState<'pcs' | 'pack'>('pcs');
-  const [packQty, setPackQty] = useState("");
-  const [packMultiplier, setPackMultiplier] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [transactionDate, setTransactionDate] = useState("");
@@ -113,25 +110,12 @@ export default function RestockPage() {
   );
 
   const selectedMaterial = materials.find(m => m.id === selectedMaterialId);
-  const finalQty = qtyMode === 'pack' ? (Number(packQty) * Number(packMultiplier)) : Number(quantity);
-  const totalPrice = (costPrice !== "" && finalQty > 0)
-    ? Number(costPrice) * finalQty
+  const totalPrice = (costPrice !== "" && quantity !== "")
+    ? Number(costPrice) * Number(quantity)
     : 0;
 
   const selectMaterial = (m: Material) => {
     setSelectedMaterialId(m.id);
-    const match = m.name.match(/-\s*\[(.*?)\]$/);
-    if (match) {
-      const numbers = match[1].match(/\d+/g);
-      if (numbers && numbers.length > 0) {
-        setPackMultiplier(numbers[numbers.length - 1]);
-      }
-    } else {
-      setPackMultiplier("");
-    }
-    setQtyMode('pcs');
-    setQuantity("");
-    setPackQty("");
     setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
@@ -159,18 +143,28 @@ export default function RestockPage() {
     }
   };
 
-  async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMaterialId || finalQty <= 0 || costPrice === "" || Number(costPrice) <= 0) return;
+    if (!selectedMaterialId || quantity === "" || Number(quantity) <= 0 || costPrice === "" || Number(costPrice) <= 0) return;
+
+    let multiplier = 1;
+    if (selectedMaterial) {
+      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+      if (match) multiplier = Number(match[2]);
+    }
+
+    const calculatedQty = Number(quantity) * multiplier;
+    const calculatedCost = multiplier > 1 ? Math.round(Number(costPrice) / multiplier) : Number(costPrice);
+    const calculatedTotal = Number(quantity) * Number(costPrice);
 
     setLoading(true);
 
     const insertData: any = {
       material_id: selectedMaterialId,
       type: 'IN',
-      quantity: finalQty,
-      cost_price: Number(costPrice),
-      total_price: totalPrice,
+      quantity: calculatedQty,
+      cost_price: calculatedCost,
+      total_price: calculatedTotal,
       store: activeStore
     };
 
@@ -299,50 +293,16 @@ export default function RestockPage() {
               {/* Quantity */}
               <div>
                 <label className="block text-xs font-bold mb-2 uppercase tracking-wide">Quantity</label>
-                <div className="flex border border-black mb-3">
-                  <button type="button" onClick={() => setQtyMode('pcs')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${qtyMode === 'pcs' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Eceran (Pcs)</button>
-                  <button type="button" onClick={() => setQtyMode('pack')} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${qtyMode === 'pack' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Grosir (Pack/Dus)</button>
-                </div>
-                {qtyMode === 'pcs' ? (
-                  <input
-                    ref={qtyInputRef}
-                    type="number"
-                    min="1"
-                    className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
-                    placeholder="Jumlah Pcs"
-                    required
-                  />
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      ref={qtyInputRef}
-                      type="number"
-                      min="1"
-                      className="w-1/2 border border-black p-3 bg-transparent focus-ring transition-swiss"
-                      value={packQty}
-                      onChange={(e) => setPackQty(e.target.value.replace(/^0+(?=\d)/, ''))}
-                      placeholder="Jml Pack"
-                      required
-                    />
-                    <div className="flex items-center font-bold">x</div>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-1/2 border border-black p-3 bg-transparent focus-ring transition-swiss"
-                      value={packMultiplier}
-                      onChange={(e) => setPackMultiplier(e.target.value.replace(/^0+(?=\d)/, ''))}
-                      placeholder="Isi per pack"
-                      required
-                    />
-                  </div>
-                )}
-                {qtyMode === 'pack' && packQty && packMultiplier && (
-                  <div className="text-blue-600 text-xs font-bold mt-2">
-                    Total Stok Masuk: {Number(packQty) * Number(packMultiplier)} Pcs
-                  </div>
-                )}
+                <input
+                  ref={qtyInputRef}
+                  type="number"
+                  min="1"
+                  className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  placeholder="Jumlah barang"
+                  required
+                />
               </div>
 
               {/* Cost Price */}
@@ -373,7 +333,7 @@ export default function RestockPage() {
 
               <button
                 type="submit"
-                disabled={loading || !selectedMaterialId || finalQty <= 0 || costPrice === "" || Number(costPrice) <= 0}
+                disabled={loading || !selectedMaterialId || quantity === "" || Number(quantity) <= 0 || costPrice === "" || Number(costPrice) <= 0}
                 className="w-full bg-black text-white p-4 font-bold uppercase tracking-wider hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
               >
                 {loading ? "PROCESSING..." : (
@@ -452,7 +412,6 @@ export default function RestockPage() {
     </div>
   );
 }
-
 
 
 
