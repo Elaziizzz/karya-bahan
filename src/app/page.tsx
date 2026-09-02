@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
@@ -32,7 +32,7 @@ type Transaction = {
   };
 };
 
-type CartItem = {
+type CartItem = { custom_price?: number;
   material: Material;
   quantity: number;
   subtotal: number;
@@ -157,12 +157,11 @@ export default function POSDashboard() {
       const existing = prev.find(item => item.material.id === selectedMaterial.id);
       if (existing) {
         return prev.map(item => 
-          item.material.id === selectedMaterial.id 
-            ? { ...item, quantity: item.quantity + qtyNum, subtotal: item.subtotal + subtotal }
+          item.material.id === selectedMaterial.id ? { ...item, quantity: item.quantity + qtyNum, subtotal: (item.custom_price || item.material.price) * (item.quantity + qtyNum) }
             : item
         );
       }
-      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal }];
+      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price }];
     });
 
     setSelectedMaterialId("");
@@ -170,6 +169,8 @@ export default function POSDashboard() {
     setQuantity("");
     if (quantityInputRef.current) quantityInputRef.current.blur();
   }
+
+  function updateItemPrice(index: number, newPrice: number) { setCart(prev => prev.map((item, i) => i === index ? { ...item, custom_price: newPrice, subtotal: newPrice * item.quantity } : item)); }
 
   function removeFromCart(index: number) {
     setCart(prev => prev.filter((_, i) => i !== index));
@@ -297,6 +298,7 @@ export default function POSDashboard() {
               <div className="text-center mb-6 border-b border-dashed border-gray-400 pb-4">
                 <h2 className="text-2xl font-bold">KARYA BAHAN</h2>
                 <p className="text-xs">Toko Material & Bangunan</p>
+                <p className="text-[10px] italic mt-1 font-semibold uppercase tracking-widest">Jaya Plafon</p>
               </div>
               
               <div className="mb-4">
@@ -322,9 +324,9 @@ export default function POSDashboard() {
                 <tbody>
                   {receiptData.items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="py-1 pr-2">{item.material.name}</td>
+                      <td className="py-1 pr-2">{item.material.code ? `[${item.material.code}] ` : ''}{item.material.name}</td>
                       <td className="py-1 text-right">{item.quantity}</td>
-                      <td className="py-1 text-right">{item.material.price.toLocaleString("id-ID")}</td>
+                      <td className="py-1 text-right">{(item.custom_price ?? item.material.price).toLocaleString("id-ID")}</td>
                       <td className="py-1 text-right">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
@@ -487,7 +489,17 @@ export default function POSDashboard() {
                             {item.material.name}
                           </td>
                           <td className="p-3 text-right font-mono">{item.quantity}</td>
-                          <td className="p-3 text-right font-mono">Rp {item.material.price.toLocaleString("id-ID")}</td>
+                          <td className="p-3 text-right font-mono">
+                            <div className="flex items-center justify-end gap-1">
+                              <span>Rp</span>
+                              <input
+                                type="number"
+                                className="w-24 bg-white border border-gray-300 px-2 py-1 text-right focus:outline-none focus:border-black rounded-none"
+                                value={item.custom_price ?? item.material.price}
+                                onChange={(e) => updateItemPrice(index, Number(e.target.value))}
+                              />
+                            </div>
+                          </td>
                           <td className="p-3 text-right font-mono font-bold">Rp {item.subtotal.toLocaleString("id-ID")}</td>
                           <td className="p-3 text-center">
                             <button 
@@ -580,6 +592,8 @@ export default function POSDashboard() {
     </div>
   );
 }
+
+
 
 
 

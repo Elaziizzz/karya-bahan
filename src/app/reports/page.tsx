@@ -22,9 +22,7 @@ type Transaction = {
   created_at: string;
   deleted_at: string | null;
   store: string;
-  materials?: {
-    name: string;
-  };
+  materials?: { name: string; code?: string; };
 };
 
 type Material = {
@@ -69,7 +67,7 @@ export default function ReportsPage() {
     // Fetch Transactions
     const { data: trx } = await supabase
       .from("transactions")
-      .select("*, materials(name)")
+      .select("*, materials(name, code)")
       .eq("store", store)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -188,7 +186,7 @@ export default function ReportsPage() {
       const rowData = [
         format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy HH:mm"),
         typeStr,
-        t.materials?.name || "Unknown",
+        (t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown")),
         t.quantity.toString(),
         modalPcsStr,
         jualPcsStr,
@@ -313,7 +311,7 @@ export default function ReportsPage() {
         no: index + 1,
         date: format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd HH:mm:ss"),
         type: isBeli ? 'BELI (IN)' : 'JUAL (OUT)',
-        material: t.materials?.name || "Unknown",
+        material: (t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown")),
         qty: t.quantity,
         modal: isBeli ? t.total_price / (t.quantity || 1) : (t.cost_price || 0),
         jual: isBeli ? "-" : t.total_price / (t.quantity || 1),
@@ -653,7 +651,7 @@ export default function ReportsPage() {
                         )}
                       </td>
                       <td className="p-4 font-medium">
-                        {t.materials?.name || "Unknown"}
+                        {(t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown"))}
                       </td>
                       <td className="p-4 text-right font-mono">
                         {t.quantity}
@@ -719,6 +717,10 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+
+
+
 
 
 

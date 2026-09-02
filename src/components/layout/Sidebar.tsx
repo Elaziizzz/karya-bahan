@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -33,6 +33,7 @@ export function Sidebar() {
             </h1>
             <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
               Toko Material & Bangunan
+              <span className="block text-[10px] mt-1 text-gray-400 italic font-semibold tracking-widest">JAYA PLAFON</span>
             </div>
           </div>
 

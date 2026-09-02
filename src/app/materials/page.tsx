@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -38,7 +38,7 @@ export default function MaterialsPage() {
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
-    name: "",
+    name: "", unit_info: "",
     code: "",
     cost_price: "",
     price: "",
@@ -86,7 +86,7 @@ export default function MaterialsPage() {
       const { error } = await supabase
         .from("materials")
         .update({
-          name: formData.name,
+            name: formData.unit_info ? formData.name + ' - [' + formData.unit_info + ']' : formData.name,
           code: formData.code || null,
           cost_price: Number(formData.cost_price),
           price: Number(formData.price),
@@ -105,7 +105,7 @@ export default function MaterialsPage() {
     } else {
       const { error } = await supabase.from("materials").insert([
         {
-          name: formData.name,
+            name: formData.unit_info ? formData.name + ' - [' + formData.unit_info + ']' : formData.name,
           code: formData.code || null,
           current_stock: Number(formData.current_stock),
           cost_price: Number(formData.cost_price),
@@ -119,7 +119,7 @@ export default function MaterialsPage() {
       } else {
         showToast("Material berhasil disimpan!", "success");
         setIsModalOpen(false);
-        setFormData({ name: "", code: "", cost_price: "", price: "", current_stock: "" });
+        setFormData({ name: "", unit_info: "", code: "", cost_price: "", price: "", current_stock: "" });
         fetchMaterials(activeStore);
       }
     }
@@ -219,7 +219,7 @@ export default function MaterialsPage() {
           let rowObj: any = {};
           headers.forEach((h, idx) => { rowObj[h] = row[idx]; });
 
-          let mappedRow: any = { code: "", name: "", stock: 0, cost_price: 0, price: 0 };
+          let mappedRow: any = { code: "", name: "", unit_info: "", stock: 0, cost_price: 0, price: 0 };
           if (mapping.code) mappedRow.code = String(rowObj[mapping.code] || "");
           if (mapping.name) mappedRow.name = String(rowObj[mapping.name] || "");
           if (mapping.stock) mappedRow.stock = Number(rowObj[mapping.stock]) || 0;
@@ -355,7 +355,7 @@ export default function MaterialsPage() {
           <button
             onClick={() => {
               setEditingId(null);
-              setFormData({ name: "", code: "", cost_price: "", price: "", current_stock: "" });
+              setFormData({ name: "", unit_info: "", code: "", cost_price: "", price: "", current_stock: "" });
               setIsModalOpen(true);
             }}
             className="bg-black text-white px-6 py-2 font-bold uppercase hover:bg-gray-800 transition-swiss active-press hover-elevate flex-1 sm:flex-none justify-center"
@@ -539,6 +539,10 @@ export default function MaterialsPage() {
                 <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
                 <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
               </div>
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase text-gray-500">Info Kemasan / Satuan (Opsional)</label>
+                <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" placeholder="Cth: 1 Dus = 15 Pcs" value={formData.unit_info} onChange={(e) => setFormData({...formData, unit_info: e.target.value})} />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold mb-1 uppercase">Harga Beli</label>
@@ -603,7 +607,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 10 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold' : ''}`}>
-                    {item.current_stock} {item.current_stock <= 10 && '⚠️'}
+                    {item.current_stock} {item.current_stock <= 10 && 'Ã¢Å¡Â Ã¯Â¸Â'}
                   </span>
                 </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
@@ -623,7 +627,7 @@ export default function MaterialsPage() {
                     <button 
                       onClick={() => { 
                         setEditingId(item.id); 
-                        setFormData({name: item.name, code: item.code || "", cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)}); 
+                        setFormData({name: item.name.replace(/\s*-\s*\[(.*?)\]$/, ''), unit_info: item.name.match(/\s*-\s*\[(.*?)\]$/)?.[1] || "", code: item.code || "", cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)}); 
                         setIsModalOpen(true); 
                       }} 
                       className="p-1.5 border border-black text-black hover:bg-black hover:text-white transition-swiss active-press hover-elevate"
@@ -648,3 +652,6 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
+
+
