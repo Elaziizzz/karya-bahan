@@ -112,7 +112,7 @@ export default function POSDashboard() {
 
     const { data: all } = await supabase
       .from("transactions")
-      .select("type, total_price")
+      .select("type, total_price, created_at")
       .eq("store", store)
       .is("deleted_at", null);
     if (all) setAllTransactions(all as Transaction[]);
@@ -580,6 +580,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 
