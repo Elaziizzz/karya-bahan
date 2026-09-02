@@ -32,10 +32,14 @@ type Transaction = {
   };
 };
 
-type CartItem = { pack_display?: string; custom_price?: number;
+type CartItem = {
   material: Material;
   quantity: number;
   subtotal: number;
+  display_quantity: number;
+  display_unit: string;
+  display_price: number;
+  pack_multiplier: number;
 };
 
 export default function POSDashboard() {
@@ -142,40 +146,72 @@ export default function POSDashboard() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
-    function addToCart(e: React.FormEvent) {
-    e.preventDefault();
+  function addToCart(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!selectedMaterial || !quantity || Number(quantity) <= 0) return;
 
     let multiplier = 1;
-    let packName = '';
-    let packDisplay: string | undefined = undefined;
-    
-    if (buyMode === 'grosir') {
-      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+    let baseUnit = 'Pcs';
+    let displayUnit = 'Pcs';
+    let displayPrice = selectedMaterial.price;
+    let isGrosirMode = buyMode === 'grosir';
+
+    const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+    if (baseMatch) {
+      baseUnit = baseMatch[1].trim();
+      displayUnit = baseUnit;
+    }
+
+    if (isGrosirMode) {
+      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
       if (match) {
-        packName = match[1].trim();
+        displayUnit = match[1].trim();
         multiplier = Number(match[2]);
-        packDisplay = quantity + " " + packName + " (" + multiplier + " " + match[3].trim() + "/" + packName + ")";
+        baseUnit = match[3].trim();
+        if (match[4]) {
+          displayPrice = Number(match[4]);
+        } else {
+          displayPrice = selectedMaterial.price * multiplier;
+        }
+      } else {
+        isGrosirMode = false;
+      }
+    } else {
+      const packMatch = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+      if (packMatch) {
+        baseUnit = packMatch[3].trim();
+        displayUnit = baseUnit;
       }
     }
 
-    const qtyNum = Number(quantity) * multiplier;
-    if (qtyNum > selectedMaterial.current_stock) {
+    const qtyNum = Number(quantity); // user input (e.g. 3)
+    const baseQtyNum = qtyNum * multiplier; // (e.g. 45)
+
+    if (baseQtyNum > selectedMaterial.current_stock) {
       showToast("Stok tidak cukup! (Sisa: " + selectedMaterial.current_stock + ")", "error");
       return;
     }
 
-    const subtotal = selectedMaterial.price * qtyNum;
+    const subtotal = displayPrice * qtyNum;
     
     setCart(prev => {
-      const existing = prev.findIndex(item => item.material.id === selectedMaterial.id && item.custom_price === selectedMaterial.price && item.pack_display === packDisplay);
+      const existing = prev.findIndex(item => item.material.id === selectedMaterial.id && item.display_price === displayPrice && item.display_unit === displayUnit);
       if (existing >= 0) {
         const newCart = [...prev];
-        newCart[existing].quantity += qtyNum;
+        newCart[existing].display_quantity += qtyNum;
+        newCart[existing].quantity += baseQtyNum;
         newCart[existing].subtotal += subtotal;
         return newCart;
       }
-      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price, pack_display: packDisplay }];
+      return [...prev, { 
+        material: selectedMaterial, 
+        quantity: baseQtyNum, 
+        subtotal, 
+        display_quantity: qtyNum,
+        display_unit: displayUnit,
+        display_price: displayPrice,
+        pack_multiplier: multiplier
+      }];
     });
 
     setSelectedMaterialId("");
@@ -189,7 +225,7 @@ export default function POSDashboard() {
     const cleanStr = newPriceStr.replace(/^0+(?=\d)/, '');
     const parsed = cleanStr === "" ? 0 : parseInt(cleanStr, 10);
     const finalPrice = isNaN(parsed) ? 0 : parsed;
-    setCart(prev => prev.map((item, i) => i === index ? { ...item, custom_price: finalPrice, subtotal: finalPrice * item.quantity } : item)); 
+    setCart(prev => prev.map((item, i) => i === index ? { ...item, display_price: finalPrice, subtotal: finalPrice * item.display_quantity } : item)); 
   }
 
   function removeFromCart(index: number) {
@@ -345,12 +381,11 @@ export default function POSDashboard() {
                   {receiptData.items.map((item, idx) => (
                     <tr key={idx}>
                       <td className="border border-black p-2 text-center">{idx + 1}</td>
-                      <td className="border border-black p-2 font-medium">{item.material.code ? []  : ''}{item.material.name}</td>
+                      <td className="border border-black p-2 font-medium">{item.material.code ? `[${item.material.code}] ` : ''}{item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}</td>
                       <td className="border border-black p-2 text-center font-bold">
-                        {item.quantity}
-                        {item.pack_display && <div className="text-[10px] font-normal">{item.pack_display}</div>}
+                        {item.display_quantity} {item.display_unit}
                       </td>
-                      <td className="border border-black p-2 text-right">{(item.custom_price ?? item.material.price).toLocaleString("id-ID")}</td>
+                      <td className="border border-black p-2 text-right">{item.display_price.toLocaleString("id-ID")}</td>
                       <td className="border border-black p-2 text-right font-bold">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
@@ -553,11 +588,10 @@ export default function POSDashboard() {
                           <td className="p-3 text-center">{index + 1}</td>
                           <td className="p-3 font-medium">
                             {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
-                            {item.material.name}
+                            {item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}
                           </td>
                           <td className="p-3 text-right font-mono">
-                              {item.quantity}
-                              {item.pack_display && <div className="text-[10px] text-gray-500 whitespace-nowrap">{item.pack_display}</div>}
+                              <div className="text-lg">{item.display_quantity} <span className="text-xs text-gray-500">{item.display_unit}</span></div>
                             </td>
                           <td className="p-3 text-right font-mono">
                             <div className="flex items-center justify-end gap-1">
@@ -565,7 +599,7 @@ export default function POSDashboard() {
                               <input
                                 type="text"
                                 className="w-24 bg-white border border-gray-300 px-2 py-1 text-right focus:outline-none focus:border-black rounded-none"
-                                value={item.custom_price === 0 ? "" : (item.custom_price ?? item.material.price)}
+                                value={item.display_price === 0 ? "" : item.display_price}
                                 onChange={(e) => updateItemPrice(index, e.target.value)}
                               />
                             </div>

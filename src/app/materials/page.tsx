@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -37,7 +37,7 @@ export default function MaterialsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', buyQty: '', packCost: '',
+  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '',
     name: "", unit_info: "",
     code: "",
     cost_price: "",
@@ -49,7 +49,7 @@ export default function MaterialsPage() {
 
   function openAddModal() {
     setEditingId(null);
-    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', buyQty: '', packCost: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
+    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
     setIsModalOpen(true);
   }
 
@@ -59,22 +59,24 @@ export default function MaterialsPage() {
     let hasPack = false;
     let packName = 'Pack';
     let packMultiplier = '';
+    let packSalePrice = '';
     const cleanName = item.name.replace(/\s*-\s*\[(.*?)\]$/, '');
     const unitMatch = item.name.match(/\s*-\s*\[(.*?)\]$/);
     if (unitMatch) {
       const info = unitMatch[1];
-      const packMatch = info.match(/1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)$/);
+      const packMatch = info.match(/1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?$/);
       if (packMatch) {
         hasPack = true;
         packName = packMatch[1].trim();
         packMultiplier = packMatch[2];
         baseUnit = packMatch[3].trim();
+        if (packMatch[4]) packSalePrice = packMatch[4];
       } else {
         baseUnit = info.trim();
       }
     }
     setFormData({
-      baseUnit, hasPack, packName, packMultiplier, buyQty: '', packCost: '',
+      baseUnit, hasPack, packName, packMultiplier, packSalePrice, buyQty: '', packCost: '',
       name: cleanName, unit_info: '', code: item.code || '',
       cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)
     });
@@ -678,8 +680,18 @@ export default function MaterialsPage() {
                     </div>
 
                     <div className="pt-3 border-t border-gray-200 mt-auto">
-                      <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Harga Jual ke Customer / {formData.baseUnit}</label>
-                      <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 12000" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Harga Jual / {formData.baseUnit}</label>
+                          <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 12000" />
+                        </div>
+                        {formData.hasPack && (
+                          <div>
+                            <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Harga Jual / {formData.packName}</label>
+                            <input type="number" min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.packSalePrice} onChange={(e) => setFormData({...formData, packSalePrice: e.target.value.replace(/^0+/, '')})} placeholder="Kosong = Otomatis" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -734,7 +746,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 10 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold' : ''}`}>
-                    {item.current_stock} {item.current_stock <= 10 && 'ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â'}
+                    {item.current_stock} {item.current_stock <= 10 && 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â'}
                   </span>
                 </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
@@ -777,6 +789,9 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
+
+
 
 
 
