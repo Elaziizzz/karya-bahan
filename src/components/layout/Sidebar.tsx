@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,22 +19,14 @@ export function Sidebar() {
     <>
       {/* Mobile Top Header */}
       <div className="md:hidden w-full bg-white border-b-2 border-black p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-black tracking-tighter uppercase text-black">
-          KARYA <span className="text-blue-600">BAHAN</span>
-        </h1>
+        <h1 className="text-xl font-black tracking-tighter uppercase text-black">KARYA BAHAN <span className="text-blue-600">JAYA PLAFON</span></h1>
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="w-64 min-h-screen border-r border-black flex-col justify-between bg-white relative hidden md:flex transition-all duration-300">
         <div className="p-8 pb-4">
           <div className="mb-8 border-b-4 border-black pb-4">
-            <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words group cursor-default">
-              KARYA <span className="text-blue-600 transition-colors group-hover:text-black">BAHAN</span>
-            </h1>
-            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Toko Material & Bangunan
-              <span className="block text-[10px] mt-1 text-gray-400 italic font-semibold tracking-widest">JAYA PLAFON</span>
-            </div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words group cursor-default">KARYA BAHAN <span className="text-blue-600 transition-colors group-hover:text-black">JAYA PLAFON</span></h1><div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Toko Material & Bangunan</div>
           </div>
 
           <nav className="flex flex-col gap-2">
@@ -87,3 +79,4 @@ export function Sidebar() {
     </>
   );
 }
+

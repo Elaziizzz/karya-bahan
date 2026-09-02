@@ -87,11 +87,37 @@ export default function TrashPage() {
     }
   }
 
+  async function handleEmptyTrash() {
+    if (!confirm("PERINGATAN: Semua transaksi di tong sampah akan dihapus secara PERMANEN. Lanjutkan?")) return;
+    
+    const { error } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("store", activeStore)
+      .not("deleted_at", "is", null);
+      
+    if (error) {
+      alert("Error hapus semua: " + error.message);
+    } else {
+      fetchAndCleanTrash(activeStore); // Refresh list
+    }
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center gap-3 border-b-2 border-red-600 pb-4 text-red-600">
-        <Trash2 className="w-8 h-8" />
-        <h1 className="text-3xl font-bold uppercase tracking-tighter">Tong Sampah</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-red-600 pb-4">
+        <div className="flex items-center gap-3 text-red-600">
+          <Trash2 className="w-8 h-8" />
+          <h1 className="text-3xl font-bold uppercase tracking-tighter">Tong Sampah</h1>
+        </div>
+        {trashed.length > 0 && (
+          <button 
+            onClick={handleEmptyTrash}
+            className="bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-800 transition-swiss active-press inline-flex items-center gap-2 shadow-sm"
+          >
+            <Trash2 className="w-4 h-4" /> Hapus Semua Permanen
+          </button>
+        )}
       </div>
 
       <div className="bg-red-50 border border-red-200 p-4 flex gap-3 text-red-800 text-sm">
@@ -168,3 +194,4 @@ export default function TrashPage() {
     </div>
   );
 }
+
