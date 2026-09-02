@@ -32,7 +32,7 @@ type Transaction = {
   };
 };
 
-type CartItem = { custom_price?: number;
+type CartItem = { pack_display?: string; custom_price?: number;
   material: Material;
   quantity: number;
   subtotal: number;
@@ -47,6 +47,7 @@ export default function POSDashboard() {
   
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [buyMode, setBuyMode] = useState<'ecer' | 'grosir'>('ecer');
   const [loading, setLoading] = useState(false);
 
   const [activeStore] = useState<string>("karya_bahan");
@@ -141,32 +142,46 @@ export default function POSDashboard() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
-  function addToCart(e: React.FormEvent) {
+    function addToCart(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedMaterial || !quantity || Number(quantity) <= 0) return;
 
-    const qtyNum = Number(quantity);
+    let multiplier = 1;
+    let packName = '';
+    let packDisplay: string | undefined = undefined;
+    
+    if (buyMode === 'grosir') {
+      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+      if (match) {
+        packName = match[1].trim();
+        multiplier = Number(match[2]);
+        packDisplay = quantity + " " + packName + " (" + multiplier + " " + match[3].trim() + "/" + packName + ")";
+      }
+    }
+
+    const qtyNum = Number(quantity) * multiplier;
     if (qtyNum > selectedMaterial.current_stock) {
-      showToast(`Stok tidak cukup! (Sisa: ${selectedMaterial.current_stock})`, "error");
+      showToast("Stok tidak cukup! (Sisa: " + selectedMaterial.current_stock + ")", "error");
       return;
     }
 
     const subtotal = selectedMaterial.price * qtyNum;
-
+    
     setCart(prev => {
-      const existing = prev.find(item => item.material.id === selectedMaterial.id);
-      if (existing) {
-        return prev.map(item => 
-          item.material.id === selectedMaterial.id ? { ...item, quantity: item.quantity + qtyNum, subtotal: (item.custom_price || item.material.price) * (item.quantity + qtyNum) }
-            : item
-        );
+      const existing = prev.findIndex(item => item.material.id === selectedMaterial.id && item.custom_price === selectedMaterial.price && item.pack_display === packDisplay);
+      if (existing >= 0) {
+        const newCart = [...prev];
+        newCart[existing].quantity += qtyNum;
+        newCart[existing].subtotal += subtotal;
+        return newCart;
       }
-      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price }];
+      return [...prev, { material: selectedMaterial, quantity: qtyNum, subtotal, custom_price: selectedMaterial.price, pack_display: packDisplay }];
     });
 
     setSelectedMaterialId("");
     setSearchQuery("");
     setQuantity("");
+    setBuyMode('ecer');
     if (quantityInputRef.current) quantityInputRef.current.blur();
   }
 
@@ -251,6 +266,8 @@ export default function POSDashboard() {
     setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
+    setBuyMode('ecer');
+    setQuantity("");
     
     // Auto focus quantity
     setTimeout(() => {
@@ -329,7 +346,10 @@ export default function POSDashboard() {
                     <tr key={idx}>
                       <td className="border border-black p-2 text-center">{idx + 1}</td>
                       <td className="border border-black p-2 font-medium">{item.material.code ? []  : ''}{item.material.name}</td>
-                      <td className="border border-black p-2 text-center font-bold">{item.quantity}</td>
+                      <td className="border border-black p-2 text-center font-bold">
+                        {item.quantity}
+                        {item.pack_display && <div className="text-[10px] font-normal">{item.pack_display}</div>}
+                      </td>
                       <td className="border border-black p-2 text-right">{(item.custom_price ?? item.material.price).toLocaleString("id-ID")}</td>
                       <td className="border border-black p-2 text-right font-bold">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
@@ -404,6 +424,8 @@ export default function POSDashboard() {
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
                       setHighlightedIndex(-1);
+    setBuyMode('ecer');
+    setQuantity("");
                       setIsDropdownOpen(true);
                       if (selectedMaterialId) setSelectedMaterialId("");
                     }}
@@ -440,25 +462,53 @@ export default function POSDashboard() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-bold mb-2 uppercase">Quantity</label>
-                <input
-                  ref={quantityInputRef}
-                  type="number"
-                  min="1"
-                  max={selectedMaterial?.current_stock || undefined}
-                  className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
-                  placeholder="Jumlah barang"
-                  required
-                />
-                {selectedMaterial && (
-                  <div className="mt-1 text-xs text-gray-500 font-mono">
-                    Harga: Rp {selectedMaterial.price.toLocaleString("id-ID")} | Max Qty: {selectedMaterial.current_stock}
-                  </div>
-                )}
-              </div>
+                              <div>
+                  <label className="block text-sm font-bold mb-2 uppercase">Quantity</label>
+                  {(() => {
+                    let isPack = false;
+                    let packName = '';
+                    let baseUnit = 'Pcs';
+                    if (selectedMaterial) {
+                      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+                      if (match) {
+                        isPack = true;
+                        packName = match[1].trim();
+                        baseUnit = match[3].trim();
+                      } else {
+                        const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+                        if (baseMatch) baseUnit = baseMatch[1].trim();
+                      }
+                    }
+
+                    return (
+                      <>
+                        {isPack && (
+                          <div className="flex border border-black mb-3">
+                            <button type="button" onClick={() => setBuyMode('ecer')} className={`flex-1 p-2 text-xs font-bold uppercase transition-colors ${buyMode === 'ecer' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Eceran ({baseUnit})</button>
+                            <button type="button" onClick={() => setBuyMode('grosir')} className={`flex-1 p-2 text-xs font-bold uppercase border-l border-black transition-colors ${buyMode === 'grosir' ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>Grosir ({packName})</button>
+                          </div>
+                        )}
+                        <input
+                          ref={quantityInputRef}
+                          type="number"
+                          min="1"
+                          max={buyMode === 'ecer' ? (selectedMaterial?.current_stock || undefined) : undefined}
+                          className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
+                          value={quantity}
+                          onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                          placeholder={isPack && buyMode === 'grosir' ? `Berapa ${packName}?` : `Jumlah ${baseUnit}`}
+                          required
+                        />
+                      </>
+                    );
+                  })()}
+                  
+                  {selectedMaterial && (
+                    <div className="mt-1 text-xs text-gray-500 font-mono">
+                      Harga: Rp {selectedMaterial.price.toLocaleString("id-ID")} | Max Qty: {selectedMaterial.current_stock}
+                    </div>
+                  )}
+                </div>
 
               <button
                 type="submit"
@@ -503,7 +553,10 @@ export default function POSDashboard() {
                             {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
                             {item.material.name}
                           </td>
-                          <td className="p-3 text-right font-mono">{item.quantity}</td>
+                          <td className="p-3 text-right font-mono">
+                              {item.quantity}
+                              {item.pack_display && <div className="text-[10px] text-gray-500 whitespace-nowrap">{item.pack_display}</div>}
+                            </td>
                           <td className="p-3 text-right font-mono">
                             <div className="flex items-center justify-end gap-1">
                               <span>Rp</span>
@@ -607,6 +660,10 @@ export default function POSDashboard() {
     </div>
   );
 }
+
+
+
+
 
 
 
