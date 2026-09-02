@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -118,7 +118,8 @@ input[type=number] {
 /* Print styles for NCR Receipt */
 @media print {
   @page {
-    size: 215mm 139mm landscape;
+    size: 200mm 150mm landscape;
     margin: 10mm;
   }
 }
+
