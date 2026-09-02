@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
@@ -170,7 +170,12 @@ export default function POSDashboard() {
     if (quantityInputRef.current) quantityInputRef.current.blur();
   }
 
-  function updateItemPrice(index: number, newPrice: number) { setCart(prev => prev.map((item, i) => i === index ? { ...item, custom_price: newPrice, subtotal: newPrice * item.quantity } : item)); }
+  function updateItemPrice(index: number, newPriceStr: string) {
+    const cleanStr = newPriceStr.replace(/^0+(?=\d)/, '');
+    const parsed = cleanStr === "" ? 0 : parseInt(cleanStr, 10);
+    const finalPrice = isNaN(parsed) ? 0 : parsed;
+    setCart(prev => prev.map((item, i) => i === index ? { ...item, custom_price: finalPrice, subtotal: finalPrice * item.quantity } : item)); 
+  }
 
   function removeFromCart(index: number) {
     setCart(prev => prev.filter((_, i) => i !== index));
@@ -503,10 +508,10 @@ export default function POSDashboard() {
                             <div className="flex items-center justify-end gap-1">
                               <span>Rp</span>
                               <input
-                                type="number"
+                                type="text"
                                 className="w-24 bg-white border border-gray-300 px-2 py-1 text-right focus:outline-none focus:border-black rounded-none"
-                                value={item.custom_price ?? item.material.price}
-                                onChange={(e) => updateItemPrice(index, Number(e.target.value))}
+                                value={item.custom_price === 0 ? "" : (item.custom_price ?? item.material.price)}
+                                onChange={(e) => updateItemPrice(index, e.target.value)}
                               />
                             </div>
                           </td>

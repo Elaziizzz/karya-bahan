@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -270,6 +270,12 @@ export default function RestockPage() {
                         </div>
                       ))
                     )}
+                  </div>
+                )}
+                {selectedMaterial && (
+                  <div className="mt-2 text-xs text-gray-600 font-mono bg-gray-100 p-2 border border-gray-300">
+                    <div>Harga Jual: Rp {selectedMaterial.price.toLocaleString("id-ID")}</div>
+                    <div>Stok Saat Ini: {selectedMaterial.current_stock}</div>
                   </div>
                 )}
               </div>

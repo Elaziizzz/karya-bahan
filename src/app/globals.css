@@ -114,3 +114,11 @@ input[type=number] {
 .animate-toast-exit {
   animation: slideOutRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* Print styles for NCR Receipt */
+@media print {
+  @page {
+    size: 215mm 139mm landscape;
+    margin: 10mm;
+  }
+}
