@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -571,125 +571,129 @@ export default function MaterialsPage() {
       )}
 
       {/* --- MANUAL ADD / EDIT MODAL --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 max-w-md w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
-            <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
-              <Edit2 className="w-5 h-5" />
-              {editingId ? "Edit Material" : "Tambah Material"}
-            </h2>
-                          <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto px-1 pb-1">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white p-6 max-w-3xl w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
+              <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
+                <Edit2 className="w-5 h-5" />
+                {editingId ? "Edit Material" : "Tambah Material"}
+              </h2>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1">
                     <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Ops)</label>
                     <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
                     <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Semen, PVC..." />
                   </div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-300 p-3 mb-4">
-                  <label className="block text-xs font-bold mb-2 uppercase text-blue-800">1. Pengaturan Satuan & Kemasan</label>
-                  <div className="grid grid-cols-2 gap-4 mb-3">
-                    <div>
-                      <label className="block text-xs font-bold mb-1 uppercase">Satuan Dasar</label>
-                      <select className="w-full border border-black p-2 bg-white" value={formData.baseUnit} onChange={(e) => setFormData({...formData, baseUnit: e.target.value})}>
-                        <option value="Pcs">Pcs</option>
-                        <option value="Lembar">Lembar</option>
-                        <option value="Batang">Batang</option>
-                        <option value="Kg">Kg</option>
-                        <option value="Biji">Biji</option>
-                        <option value="Meter">Meter</option>
-                        <option value="Roll">Roll</option>
-                        <option value="Zak">Zak / Sak</option>
-                      </select>
-                    </div>
-                    <div className="flex items-end pb-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" className="w-4 h-4 accent-black" checked={formData.hasPack} onChange={(e) => setFormData({...formData, hasPack: e.target.checked})} />
-                        <span className="text-xs font-bold uppercase">Bisa Kemasan/Grosir?</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {formData.hasPack && (
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-300">
+                <div className="grid grid-cols-2 gap-4 items-start">
+                  {/* Satuan & Kemasan */}
+                  <div className="bg-gray-50 border border-gray-300 p-3 h-full">
+                    <label className="block text-xs font-bold mb-3 uppercase text-blue-800 border-b border-gray-200 pb-2">1. Pengaturan Satuan & Kemasan</label>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       <div>
-                        <label className="block text-xs font-bold mb-1 uppercase">Nama Kemasan</label>
-                        <select className="w-full border border-black p-2 bg-white" value={formData.packName} onChange={(e) => setFormData({...formData, packName: e.target.value})}>
-                          <option value="Pack">Pack</option>
-                          <option value="Dus">Dus / Box</option>
-                          <option value="Karton">Karton</option>
+                        <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Satuan Dasar</label>
+                        <select className="w-full border border-black p-2 bg-white text-sm" value={formData.baseUnit} onChange={(e) => setFormData({...formData, baseUnit: e.target.value})}>
+                          <option value="Pcs">Pcs</option>
+                          <option value="Lembar">Lembar</option>
+                          <option value="Batang">Batang</option>
+                          <option value="Kg">Kg</option>
+                          <option value="Biji">Biji</option>
+                          <option value="Meter">Meter</option>
                           <option value="Roll">Roll</option>
-                          <option value="Sak">Sak</option>
-                          <option value="Bal">Bal</option>
+                          <option value="Zak">Zak / Sak</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold mb-1 uppercase">1 {formData.packName} = Berapa {formData.baseUnit}?</label>
-                        <input type="number" required min="1" className="w-full border border-black p-2" value={formData.packMultiplier} onChange={(e) => setFormData({...formData, packMultiplier: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 15" />
+                      <div className="flex items-center pt-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" className="w-4 h-4 accent-black" checked={formData.hasPack} onChange={(e) => setFormData({...formData, hasPack: e.target.checked})} />
+                          <span className="text-[10px] font-bold uppercase text-gray-600">Bisa Kemasan/Grosir?</span>
+                        </label>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                <div className="bg-gray-50 border border-gray-300 p-3 mb-4">
-                  <label className="block text-xs font-bold mb-2 uppercase text-green-800">2. Pengaturan Stok & Harga</label>
-                  
-                  {(!editingId && formData.hasPack && formData.packMultiplier) ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4">
+                    {formData.hasPack && (
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
                         <div>
-                          <label className="block text-xs font-bold mb-1 uppercase">Beli Berapa {formData.packName}?</label>
-                          <input type="number" required min="0" className="w-full border border-black p-2" value={formData.buyQty} onChange={(e) => {
-                            const val = e.target.value.replace(/^0+/, '');
-                            const total = Number(val) * Number(formData.packMultiplier);
-                            setFormData({...formData, buyQty: val, current_stock: String(total)});
-                          }} placeholder="Cth: 10" />
-                          <div className="text-[10px] text-gray-600 mt-1">Total: <b>{formData.current_stock || 0} {formData.baseUnit}</b></div>
+                          <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Nama Kemasan</label>
+                          <select className="w-full border border-black p-2 bg-white text-sm" value={formData.packName} onChange={(e) => setFormData({...formData, packName: e.target.value})}>
+                            <option value="Pack">Pack</option>
+                            <option value="Dus">Dus / Box</option>
+                            <option value="Karton">Karton</option>
+                            <option value="Roll">Roll</option>
+                            <option value="Sak">Sak</option>
+                            <option value="Bal">Bal</option>
+                          </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold mb-1 uppercase">Harga Modal / {formData.packName}</label>
-                          <input type="number" required min="0" className="w-full border border-black p-2" value={formData.packCost} onChange={(e) => {
-                            const val = e.target.value.replace(/^0+/, '');
-                            const perItem = Number(formData.packMultiplier) > 0 ? Math.round(Number(val) / Number(formData.packMultiplier)) : 0;
-                            setFormData({...formData, packCost: val, cost_price: String(perItem)});
-                          }} placeholder="Cth: 150000" />
-                          <div className="text-[10px] text-gray-600 mt-1">Modal / {formData.baseUnit}: <b>Rp {Number(formData.cost_price).toLocaleString('id-ID')}</b></div>
+                          <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">1 {formData.packName} = Berapa {formData.baseUnit}?</label>
+                          <input type="number" required min="1" className="w-full border border-black p-2 text-sm" value={formData.packMultiplier} onChange={(e) => setFormData({...formData, packMultiplier: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 15" />
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <label className="block text-xs font-bold mb-1 uppercase">Stok ({formData.baseUnit})</label>
-                        <input type="number" required min="0" className="w-full border border-black p-2" value={formData.current_stock} onChange={(e) => setFormData({...formData, current_stock: e.target.value.replace(/^0+/, '')})} />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold mb-1 uppercase">Harga Modal / {formData.baseUnit}</label>
-                        <input type="number" required min="0" className="w-full border border-black p-2" value={formData.cost_price} onChange={(e) => setFormData({...formData, cost_price: e.target.value.replace(/^0+/, '')})} />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-300">
-                    <label className="block text-xs font-bold mb-1 uppercase text-blue-600">Harga Jual ke Customer / {formData.baseUnit}</label>
-                    <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 12000" />
+                  {/* Stok & Harga */}
+                  <div className="bg-gray-50 border border-gray-300 p-3 h-full flex flex-col justify-between">
+                    <div>
+                      <label className="block text-xs font-bold mb-3 uppercase text-green-800 border-b border-gray-200 pb-2">2. Pengaturan Stok & Harga</label>
+                      
+                      {(!editingId && formData.hasPack && formData.packMultiplier) ? (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Beli Berapa {formData.packName}?</label>
+                            <input type="number" required min="0" className="w-full border border-black p-2 text-sm" value={formData.buyQty} onChange={(e) => {
+                              const val = e.target.value.replace(/^0+/, '');
+                              const total = Number(val) * Number(formData.packMultiplier);
+                              setFormData({...formData, buyQty: val, current_stock: String(total)});
+                            }} placeholder="Cth: 10" />
+                            <div className="text-[9px] text-gray-500 mt-1">Total: <b>{formData.current_stock || 0} {formData.baseUnit}</b></div>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Harga Modal / {formData.packName}</label>
+                            <input type="number" required min="0" className="w-full border border-black p-2 text-sm" value={formData.packCost} onChange={(e) => {
+                              const val = e.target.value.replace(/^0+/, '');
+                              const perItem = Number(formData.packMultiplier) > 0 ? Math.round(Number(val) / Number(formData.packMultiplier)) : 0;
+                              setFormData({...formData, packCost: val, cost_price: String(perItem)});
+                            }} placeholder="Cth: 150000" />
+                            <div className="text-[9px] text-gray-500 mt-1">Modal / {formData.baseUnit}: <b>Rp {Number(formData.cost_price).toLocaleString('id-ID')}</b></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Stok ({formData.baseUnit})</label>
+                            <input type="number" required min="0" className="w-full border border-black p-2 text-sm" value={formData.current_stock} onChange={(e) => setFormData({...formData, current_stock: e.target.value.replace(/^0+/, '')})} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Modal / {formData.baseUnit}</label>
+                            <input type="number" required min="0" className="w-full border border-black p-2 text-sm" value={formData.cost_price} onChange={(e) => setFormData({...formData, cost_price: e.target.value.replace(/^0+/, '')})} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-200 mt-auto">
+                      <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Harga Jual ke Customer / {formData.baseUnit}</label>
+                      <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 12000" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-2">
+                <div className="flex gap-4 pt-2 mt-2 border-t border-gray-200">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-200 p-3 font-bold uppercase hover:bg-gray-300 transition-swiss active-press">Batal</button>
                   <button type="submit" disabled={loading} className="flex-1 bg-black text-white p-3 font-bold uppercase hover:bg-gray-800 transition-swiss hover-elevate active-press flex items-center justify-center gap-2">
                     <Check className="w-5 h-5" /> Simpan
                   </button>
                 </div>
               </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* --- INVENTORY TABLE --- */}
       <div className="overflow-x-auto border border-black shadow-sm">
