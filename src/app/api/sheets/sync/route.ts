@@ -4,7 +4,7 @@ import { google } from 'googleapis';
 const SPREADSHEET_ID = '1p5pDhyKZHGAQkla9D1mYT31ScDyzMGHsOo0zGarjlh4';
 
 function getAuth() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.replace(/^"|"$/g, '').trim();
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
   
   if (!email || !privateKey) {
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
           range: `${year}!I${rowIndex + 1}`,
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [action === 'delete' ? ['âŒ DIHAPUS (BATAL)'] : ['âœ… VALID']],
+            values: [action === 'delete' ? ['Ã¢ÂÅ’ DIHAPUS (BATAL)'] : ['Ã¢Å“â€¦ VALID']],
           },
         });
       }
@@ -111,6 +111,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 
 
 
