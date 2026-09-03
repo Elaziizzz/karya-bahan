@@ -266,12 +266,15 @@ export default function POSDashboard() {
             item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
             item.display_quantity + ' ' + item.display_unit,
             item.subtotal,
-            '✅ VALID'
+            'âœ… VALID'
           ]);
           fetch('/api/sheets/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'checkout', payload: sheetPayload, year })
+          }).then(res => res.json()).then(data => {
+            console.log('Sheets Sync Checkout:', data);
+            if (data.error) alert('Gagal Sinkronisasi Google Sheets: ' + data.error);
           }).catch(console.error);
         } catch (e) {
           console.error(e);
@@ -749,6 +752,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 

@@ -11,7 +11,7 @@ function getAuth() {
     return null;
   }
   
-  privateKey = privateKey.replace(/\\n/g, '\n');
+  privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
 
   return new google.auth.JWT({ email, key: privateKey, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 }
@@ -111,5 +111,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 
 
