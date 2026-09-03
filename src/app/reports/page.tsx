@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
@@ -97,6 +97,13 @@ export default function ReportsPage() {
       alert("Error menghapus transaksi: " + error.message);
     } else {
       fetchData(activeStore);
+      try {
+        fetch('/api/sheets/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', payload: id, year: new Date().getFullYear().toString() })
+        }).catch(console.error);
+      } catch (e) { console.error(e); }
     }
   }
 

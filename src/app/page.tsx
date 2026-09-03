@@ -249,10 +249,35 @@ export default function POSDashboard() {
       created_at: now.toISOString()
     }));
 
-    const { error } = await supabase.from("transactions").insert(insertData);
+    const { data: insertedData, error } = await supabase.from("transactions").insert(insertData).select('id');
 
     setLoading(false);
     if (!error) {
+      // Sync to Google Sheets
+      if (insertedData) {
+        try {
+          const year = now.getFullYear().toString();
+          const sheetPayload = cart.map((item, idx) => [
+            insertedData[idx]?.id || invoiceNo,
+            format(now, "yyyy-MM-dd"),
+            format(now, "HH:mm"),
+            activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Bysca',
+            'JUAL (OUT)',
+            item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
+            item.display_quantity + ' ' + item.display_unit,
+            item.subtotal,
+            '✅ VALID'
+          ]);
+          fetch('/api/sheets/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'checkout', payload: sheetPayload, year })
+          }).catch(console.error);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       showToast("Transaksi berhasil disimpan", "success");
       setReceiptData({
         invoiceNo,
@@ -281,6 +306,16 @@ export default function POSDashboard() {
       showToast("Gagal menghapus transaksi", "error");
     } else {
       showToast("Transaksi berhasil dihapus", "success");
+      // Sync to Google Sheets
+      try {
+        fetch('/api/sheets/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', payload: id, year: new Date().getFullYear().toString() })
+        }).catch(console.error);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
