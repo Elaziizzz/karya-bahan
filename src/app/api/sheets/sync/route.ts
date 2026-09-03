@@ -13,12 +13,7 @@ function getAuth() {
   
   privateKey = privateKey.replace(/\\n/g, '\n');
 
-  return new google.auth.JWT(
-    email,
-    null,
-    privateKey,
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
+  return new google.auth.JWT({ email, key: privateKey, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 }
 
 async function ensureSheetExists(year: string, sheets: any) {
@@ -103,7 +98,7 @@ export async function POST(req: Request) {
           range: `${year}!I${rowIndex + 1}`,
           valueInputOption: 'USER_ENTERED',
           requestBody: {
-            values: [action === 'delete' ? ['❌ DIHAPUS (BATAL)'] : ['✅ VALID']],
+            values: [action === 'delete' ? ['âŒ DIHAPUS (BATAL)'] : ['âœ… VALID']],
           },
         });
       }
@@ -116,4 +111,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 
