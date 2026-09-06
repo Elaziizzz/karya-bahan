@@ -393,10 +393,9 @@ export default function POSDashboard() {
             <div className="text-black font-mono print:font-mono w-full text-[11px] leading-relaxed">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-lg tracking-widest">{activeStore === 'karya_bahan' ? 'KARYA BAHAN' : 'BYSCA'}</h2>
-                  <p className="mt-4">Nama   : Cash</p>
-                  <p>Alamat : -</p>
-                  <p>Telepon: -</p>
+                  <h2 className="text-lg tracking-widest">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                  <p className="mt-4">Alamat : {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
+                  <p>Telepon: {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
                   <p>Sales  : Admin</p>
                 </div>
                 <div className="text-center">
