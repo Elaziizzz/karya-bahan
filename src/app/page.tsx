@@ -266,7 +266,7 @@ export default function POSDashboard() {
             item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
             item.display_quantity + ' ' + item.display_unit,
             item.subtotal,
-            'âœ… VALID'
+            'Ã¢Å“â€¦ VALID'
           ]);
           fetch('/api/sheets/sync', {
             method: 'POST',
@@ -416,8 +416,7 @@ export default function POSDashboard() {
                     <th className="py-2 font-normal">NAMA BARANG</th>
                     <th className="py-2 font-normal text-right w-24">QTY</th>
                     <th className="py-2 font-normal text-right w-24">HARGA</th>
-                    <th className="py-2 font-normal text-right w-24">DISC (%)</th>
-                    <th className="py-2 font-normal text-right w-32">JUMLAH</th>
+                                        <th className="py-2 font-normal text-right w-32">JUMLAH</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -432,8 +431,7 @@ export default function POSDashboard() {
                         {item.display_quantity} {item.display_unit.toUpperCase()}
                       </td>
                       <td className="py-1 text-right align-top">{item.display_price.toLocaleString("id-ID")}</td>
-                      <td className="py-1 text-right align-top">0.00</td>
-                      <td className="py-1 text-right align-top">{item.subtotal.toLocaleString("id-ID")}</td>
+                                            <td className="py-1 text-right align-top">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -453,11 +451,7 @@ export default function POSDashboard() {
                     <span>Sub Total :</span>
                     <span>{receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
-                  <div className="flex justify-between py-1">
-                    <span>Disc 0.00% :</span>
-                    <span>0</span>
-                  </div>
-                  <div className="flex justify-between py-1 font-bold">
+                                    <div className="flex justify-between py-1 font-bold">
                     <span>Total     :</span>
                     <span>{receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
@@ -751,6 +745,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 
