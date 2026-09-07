@@ -102,8 +102,8 @@ export default function RestockPage() {
       .eq("store", activeStore)
       .eq("type", "IN")
       .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .gte("created_at", new Date(new Date().setHours(0,0,0,0)).toISOString())
+      .order("created_at", { ascending: false });
     if (data) setRecentRestocks(data as Transaction[]);
   }
 

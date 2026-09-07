@@ -260,17 +260,21 @@ export default function POSDashboard() {
       if (insertedData) {
         try {
           const year = now.getFullYear().toString();
-          const sheetPayload = cart.map((item, idx) => [
-            insertedData[idx]?.id || invoiceNo,
+          // Group everything into ONE Nota row for Spreadsheet
+          const notaItemsText = cart.map(item => `${item.display_quantity} ${item.display_unit} ${item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
+          const grandTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+          
+          const sheetPayload = [[
+            invoiceNo, // Kita pakai invoiceNo sebagai ID utamanya di Spreadsheet
             format(now, "yyyy-MM-dd"),
             format(now, "HH:mm"),
             activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Bysca',
-            'JUAL (OUT)',
-            item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
-            item.display_quantity + ' ' + item.display_unit,
-            item.subtotal,
-            'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ VALID'
-          ]);
+            'JUAL (OUT) - NOTA',
+            notaItemsText,
+            '1 Nota',
+            grandTotal,
+            '? VALID'
+          ]];
           fetch('/api/sheets/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

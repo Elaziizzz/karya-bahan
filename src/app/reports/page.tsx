@@ -134,6 +134,74 @@ export default function ReportsPage() {
   }, [allTransactions, selectedFilter, customDate, customMonth]);
 
   // Calculations for P&L Dashboard
+  
+  // Group logic for UI and Exports
+  const groupedTransactions = useMemo(() => {
+    const groups: any[] = [];
+    let currentNota: any = null;
+
+    // filteredTransactions is sorted by created_at descending
+    
+    groupedTransactions.forEach(g => {
+      if (!g.isNota) {
+        // Restock
+        tableRows.push([
+          format(g.created_at ? new Date(g.created_at) : new Date(0), "dd MMM yyyy HH:mm"),
+          'BELI (IN)',
+          g.materials?.name || "Unknown",
+          g.quantity.toString(),
+          (g.total_price / (g.quantity || 1)).toLocaleString("id-ID"),
+          '-',
+          '-' + g.total_price.toLocaleString("id-ID"),
+          '-'
+        ]);
+      } else {
+        // Sale Nota
+        const profit = g.total_price - g.cost_price;
+        const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
+        
+        tableRows.push([
+          format(new Date(g.created_at), "dd MMM yyyy HH:mm"),
+          'NOTA (OUT)',
+          materialText,
+          g.quantity.toString(),
+          g.cost_price.toLocaleString("id-ID"),
+          g.total_price.toLocaleString("id-ID"),
+          '+' + g.total_price.toLocaleString("id-ID"),
+          '+' + profit.toLocaleString("id-ID")
+        ]);
+      }
+    });
+
+      } else {
+        const timeKey = t.created_at; // Exact timestamp
+        
+        // Find existing nota group with this timestamp
+        let nota = groups.find(g => g.isNota && g.timeKey === timeKey);
+        if (!nota) {
+          nota = {
+            isNota: true,
+            timeKey,
+            created_at: t.created_at,
+            type: 'OUT',
+            items: [],
+            total_price: 0,
+            cost_price: 0,
+            quantity: 0
+          };
+          groups.push(nota);
+        }
+        
+        nota.items.push(t);
+        nota.total_price += Number(t.total_price);
+        nota.cost_price += Number(t.cost_price || 0) * t.quantity;
+        nota.quantity += t.quantity;
+      }
+    });
+    
+    return groups;
+  }, [filteredTransactions]);
+
   const outTransactions = filteredTransactions.filter(t => t.type === 'OUT');
   const inTransactions = filteredTransactions.filter(t => t.type === 'IN');
 
@@ -310,21 +378,39 @@ export default function ReportsPage() {
     // Freeze panes up to header row
     sheet.views = [{ state: 'frozen', ySplit: 4 }];
 
-    filteredTransactions.forEach((t, index) => {
-      const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
-      const isBeli = t.type === 'IN';
-      
-      const row = sheet.addRow({
-        no: index + 1,
-        date: format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd HH:mm:ss"),
-        type: isBeli ? 'BELI (IN)' : 'JUAL (OUT)',
-        material: (t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown")),
-        qty: t.quantity,
-        modal: isBeli ? t.total_price / (t.quantity || 1) : (t.cost_price || 0),
-        jual: isBeli ? "-" : t.total_price / (t.quantity || 1),
-        total: isBeli ? -t.total_price : t.total_price,
-        profit: isBeli ? "-" : profit
-      });
+    
+    groupedTransactions.forEach((g, index) => {
+      if (!g.isNota) {
+        worksheet.addRow({
+          no: index + 1,
+          tanggal: format(g.created_at ? new Date(g.created_at) : new Date(0), "dd/MM/yyyy HH:mm"),
+          tipe: 'BELI (IN)',
+          material: g.materials?.name || "Unknown",
+          qty: g.quantity,
+          modal: g.total_price / (g.quantity || 1),
+          jual: 0,
+          total: -g.total_price,
+          profit: 0
+        });
+      } else {
+        const profit = g.total_price - g.cost_price;
+        const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
+        
+        const row = worksheet.addRow({
+          no: index + 1,
+          tanggal: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
+          tipe: 'NOTA (OUT)',
+          material: materialText,
+          qty: g.quantity,
+          modal: g.cost_price,
+          jual: g.total_price,
+          total: g.total_price,
+          profit: profit
+        });
+        row.font = { bold: true, color: { argb: 'FF004E98' } };
+      }
+    });
+
 
       // Alignments: dates left-aligned, numbers right-aligned, text left-aligned
       row.getCell("no").alignment = { vertical: 'middle', horizontal: 'center' };
@@ -619,106 +705,83 @@ export default function ReportsPage() {
       {/* Transaction Table */}
       <div className="border-2 border-black bg-white shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl overflow-hidden mb-8">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead>
-              <tr className="bg-black text-white uppercase tracking-wide text-xs">
-                <th className="p-4 font-bold">Tanggal</th>
-                <th className="p-4 font-bold">Tipe</th>
-                <th className="p-4 font-bold">Material</th>
-                <th className="p-4 font-bold text-right">Qty</th>
-                <th className="p-4 font-bold text-right text-yellow-400">H. Modal/Pcs (Rp)</th>
-                <th className="p-4 font-bold text-right text-blue-400">H. Jual/Pcs (Rp)</th>
-                <th className="p-4 font-bold text-right">Total Transaksi (Rp)</th>
-                <th className="p-4 font-bold text-right text-green-400">Profit Bersih (Rp)</th>
-                <th className="p-4 font-bold text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-500 italic">Memuat laporan...</td>
-                </tr>
-              ) : filteredTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-gray-500 italic">Tidak ada transaksi di periode ini.</td>
-                </tr>
-              ) : (
-                filteredTransactions.map((t) => {
-                  const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
-                  return (
-                    <tr key={t.id} className="hover:bg-gray-50 border-b border-gray-200 transition-swiss">
-                      <td className="p-4">
-                        {format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy, HH:mm")}
-                      </td>
-                      <td className="p-4">
-                        {t.type === 'IN' ? (
-                          <span className="bg-red-100 text-red-800 px-2 py-1 text-xs font-bold rounded-sm border border-red-200">BELI (IN)</span>
-                        ) : (
-                          <span className="bg-green-100 text-green-800 px-2 py-1 text-xs font-bold rounded-sm border border-green-200">JUAL (OUT)</span>
-                        )}
-                      </td>
-                      <td className="p-4 font-medium">
-                        {(t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown"))}
-                      </td>
-                      <td className="p-4 text-right font-mono">
-                        {t.quantity}
-                      </td>
-                      <td className="p-4 text-right font-mono text-gray-600">
-                        {t.type === 'IN' 
-                          ? (t.total_price / (t.quantity || 1)).toLocaleString("id-ID")
-                          : (t.cost_price || 0).toLocaleString("id-ID")}
-                      </td>
-                      <td className="p-4 text-right font-mono text-blue-700 font-bold">
-                        {t.type === 'OUT' 
-                          ? (t.total_price / (t.quantity || 1)).toLocaleString("id-ID")
-                          : "-"}
-                      </td>
-                      <td className={`p-4 text-right font-mono font-bold ${t.type === 'IN' ? 'text-red-600' : 'text-blue-700'}`}>
-                        {t.type === 'IN' ? '-' : '+'} {t.total_price.toLocaleString("id-ID")}
-                      </td>
-                      <td className="p-4 text-right font-mono font-bold text-green-700">
-                        {t.type === 'OUT' ? `+ ${profit.toLocaleString("id-ID")}` : '-'}
-                      </td>
-                      <td className="p-4 text-center">
-                        <button 
-                          onClick={() => softDeleteTransaction(t.id)}
-                          className="text-gray-400 hover:text-red-600 transition-swiss active-press"
-                          title="Buang ke Tong Sampah"
-                        >
-                          <Trash2 className="w-5 h-5 mx-auto" />
-                        </button>
+          
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="bg-black text-white uppercase tracking-wide text-xs">
+                    <th className="p-4 font-bold">Tanggal</th>
+                    <th className="p-4 font-bold">Tipe</th>
+                    <th className="p-4 font-bold">Material</th>
+                    <th className="p-4 font-bold text-center">Qty</th>
+                    <th className="p-4 font-bold text-right">H. Modal (Rp)</th>
+                    <th className="p-4 font-bold text-right">H. Jual (Rp)</th>
+                    <th className="p-4 font-bold text-right">Total (Rp)</th>
+                    <th className="p-4 font-bold text-right">Profit (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupedTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-gray-500 italic">
+                        Tidak ada transaksi di periode ini.
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-            {/* TOTALS FOOTER */}
-            {!loading && filteredTransactions.length > 0 && (
-              <tfoot className="bg-gray-100 border-t-2 border-black">
-                <tr>
-                  <td colSpan={5}></td>
-                  <td className="p-4 text-right font-bold uppercase text-xs text-gray-500">Omzet Penjualan (Kotor)</td>
-                  <td className="p-4 text-right font-mono font-bold text-blue-700">+{totalSalesRevenue.toLocaleString("id-ID")}</td>
-                  <td colSpan={2}></td>
-                </tr>
-                <tr className="border-t border-gray-200">
-                  <td colSpan={5}></td>
-                  <td className="p-4 text-right font-bold uppercase text-xs text-gray-500">Modal Keluar</td>
-                  <td className="p-4 text-right font-mono font-bold text-red-700">-{costRecovered.toLocaleString("id-ID")}</td>
-                  <td colSpan={2}></td>
-                </tr>
-                <tr className="border-t-2 border-black bg-black text-white">
-                  <td colSpan={5}></td>
-                  <td className="p-4 text-right font-bold uppercase text-sm">TOTAL PROFIT BERSIH</td>
-                  <td className="p-4 text-right font-mono font-bold text-green-400 text-lg" colSpan={2}>
-                    +{realizedProfit.toLocaleString("id-ID")}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+                  ) : (
+                    groupedTransactions.map((g, idx) => {
+                      if (!g.isNota) {
+                        // Restock (IN)
+                        return (
+                          <tr key={g.id} className="hover:bg-gray-50 border-b border-gray-200 transition-colors">
+                            <td className="p-4 font-medium text-gray-700">
+                              {format(g.created_at ? new Date(g.created_at) : new Date(0), "dd MMM yyyy, HH:mm")}
+                            </td>
+                            <td className="p-4">
+                              <span className="bg-red-100 text-red-700 px-2 py-1 text-[10px] font-bold rounded uppercase">
+                                BELI (IN)
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-gray-900">
+                              {g.materials?.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">[{g.materials.code}]</span>}
+                              {g.materials?.name || "Unknown"}
+                            </td>
+                            <td className="p-4 text-center font-mono">{g.quantity}</td>
+                            <td className="p-4 text-right font-mono text-gray-600">{(g.total_price / (g.quantity || 1)).toLocaleString("id-ID")}</td>
+                            <td className="p-4 text-right font-mono text-gray-400">-</td>
+                            <td className="p-4 text-right font-mono text-red-600 font-bold">- {g.total_price.toLocaleString("id-ID")}</td>
+                            <td className="p-4 text-right font-mono text-gray-400">-</td>
+                          </tr>
+                        );
+                      } else {
+                        // Sale (OUT) - Grouped
+                        const profit = g.total_price - g.cost_price;
+                        const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
+                        
+                        return (
+                          <tr key={g.timeKey} className="hover:bg-blue-50 border-b-2 border-gray-300 transition-colors bg-blue-50/30">
+                            <td className="p-4 font-bold text-blue-900">
+                              {format(new Date(g.created_at), "dd MMM yyyy, HH:mm")}
+                            </td>
+                            <td className="p-4">
+                              <span className="bg-green-100 text-green-700 px-2 py-1 text-[10px] font-bold rounded uppercase">
+                                NOTA (OUT)
+                              </span>
+                            </td>
+                            <td className="p-4 font-medium text-gray-800 whitespace-normal min-w-[200px]">
+                              {materialText}
+                            </td>
+                            <td className="p-4 text-center font-mono font-bold">{g.quantity}</td>
+                            <td className="p-4 text-right font-mono text-gray-600">{g.cost_price.toLocaleString("id-ID")}</td>
+                            <td className="p-4 text-right font-mono text-gray-600">{g.total_price.toLocaleString("id-ID")}</td>
+                            <td className="p-4 text-right font-mono text-green-600 font-bold">+ {g.total_price.toLocaleString("id-ID")}</td>
+                            <td className="p-4 text-right font-mono text-blue-600 font-black">+ {profit.toLocaleString("id-ID")}</td>
+                          </tr>
+                        );
+                      }
+                    })
+                  )}
+                </tbody>
+              </table>
+
         </div>
       </div>
     </div>
