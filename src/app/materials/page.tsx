@@ -715,8 +715,8 @@ export default function MaterialsPage() {
               <th className="p-4 border-r border-gray-700">Kode</th>
               <th className="p-4 border-r border-gray-700">Nama Barang</th>
               <th className="p-4 text-right border-r border-gray-700">Stok</th>
-              <th className="p-4 text-right border-r border-gray-700">H. Modal (Rp)</th>
-              <th className="p-4 text-right border-r border-gray-700 text-green-400">H. Jual (Rp)</th>
+              <th className="p-4 text-right border-r border-gray-700 whitespace-nowrap">H. Modal (Pcs/Dus)</th>
+              <th className="p-4 text-right border-r border-gray-700 text-green-400 whitespace-nowrap">H. Jual (Pcs/Dus)</th>
               <th className="p-4 text-right border-r border-gray-700 text-blue-400">Total Nilai Stok</th>
               <th className="p-4 text-right border-r border-gray-700 text-yellow-400">Potensi Profit</th>
               <th className="p-4 text-center">Aksi</th>
@@ -750,11 +750,30 @@ export default function MaterialsPage() {
                   </span>
                 </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
-                  {item.cost_price.toLocaleString("id-ID")}
-                </td>
+                    {(() => {
+                      let display = item.cost_price.toLocaleString("id-ID");
+                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+                      if (match) {
+                         const multiplier = Number(match[2]);
+                         const packCost = item.cost_price * multiplier;
+                         display = `${display} / ${packCost.toLocaleString("id-ID")}`;
+                      }
+                      return display;
+                    })()}
+                  </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-green-700">
-                  {item.price.toLocaleString("id-ID")}
-                </td>
+                    {(() => {
+                      let display = item.price.toLocaleString("id-ID");
+                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+                      if (match) {
+                         const multiplier = Number(match[2]);
+                         let packPrice = item.price * multiplier;
+                         if (match[4]) packPrice = Number(match[4]);
+                         display = `${display} / ${packPrice.toLocaleString("id-ID")}`;
+                      }
+                      return display;
+                    })()}
+                  </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-blue-700">
                   {(item.current_stock * (item.cost_price || 0)).toLocaleString("id-ID")}
                 </td>
