@@ -110,7 +110,7 @@ export default function POSDashboard() {
   async function fetchTransactions(store: string) {
     const { data: recent } = await supabase
       .from("transactions")
-      .select("*, materials(name)")
+      .select("*, materials(name, code)")
       .eq("store", store)
       .eq("type", "OUT")
       .is("deleted_at", null)
@@ -155,7 +155,6 @@ export default function POSDashboard() {
     
     setLoading(true);
     
-    // Soft delete all transactions
     const ids = items.map(t => t.id);
     const { error } = await supabase.from("transactions").update({ deleted_at: new Date().toISOString() }).in("id", ids);
     
@@ -165,14 +164,14 @@ export default function POSDashboard() {
       return;
     }
 
-    // Load into Cart
-    const newCart: any[] = [];
+    const newCart: CartItem[] = [];
     for (const t of items) {
       const mat = materials.find(m => m.id === t.material_id);
       if (!mat) continue;
 
       let display_quantity = t.quantity;
       let display_unit = 'Pcs';
+      let pack_multiplier = 1;
       
       const packMatch = mat.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
       if (packMatch) {
@@ -181,6 +180,7 @@ export default function POSDashboard() {
          if (t.quantity % packMult === 0 && t.quantity >= packMult) {
            display_quantity = t.quantity / packMult;
            display_unit = packName;
+           pack_multiplier = packMult;
          } else {
            display_unit = packMatch[3].trim();
          }
@@ -191,11 +191,16 @@ export default function POSDashboard() {
          }
       }
 
+      // Calculate the display_price derived from subtotal and display_quantity
+      let display_price = Math.round(t.total_price / display_quantity);
+
       newCart.push({
         material: mat,
         quantity: t.quantity,
         display_quantity,
         display_unit,
+        display_price,
+        pack_multiplier,
         subtotal: t.total_price
       });
     }
@@ -829,7 +834,10 @@ export default function POSDashboard() {
                             <tbody>
                               {items.map((item, itemIdx) => (
                                 <tr key={item.id} className={`${itemIdx !== items.length - 1 ? 'border-b border-gray-200' : ''} hover:bg-gray-50`}>
-                                  <td className="p-3 font-bold text-gray-800">{item.materials?.name}</td>
+                                  <td className="p-3 font-bold text-gray-800">
+                                    {item.materials?.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-black">[{item.materials.code}]</span>}
+                                    {item.materials?.name}
+                                  </td>
                                   <td className="p-3 text-center w-24 font-mono">{item.quantity} x</td>
                                   <td className="p-3 text-right text-green-700 font-bold font-mono w-32">Rp {item.total_price.toLocaleString("id-ID")}</td>
                                 </tr>
