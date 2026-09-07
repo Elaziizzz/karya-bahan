@@ -179,9 +179,10 @@ export default function RestockPage() {
     if (!error) {
       showToast("Stok berhasil ditambahkan", "success");
       setSelectedMaterialId("");
-      setSearchQuery("");
-      setQuantity("");
-      setCostPrice("");
+        setSearchQuery("");
+        setQuantity("");
+        setCostPrice("");
+        fetchMaterials();
     } else {
       console.error(error);
       showToast("Gagal menambah stok: " + error.message, "error");
@@ -442,6 +443,8 @@ export default function RestockPage() {
     </div>
   );
 }
+
+
 
 
 

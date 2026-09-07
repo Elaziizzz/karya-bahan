@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -150,7 +150,7 @@ export default function MaterialsPage() {
         {
           name: finalName,
           code: formData.code || null,
-          current_stock: Number(formData.current_stock),
+          current_stock: 0, // Set to 0, trigger will update it via transaction
           cost_price: Number(formData.cost_price),
           price: Number(formData.price),
           store: activeStore,
@@ -789,6 +789,7 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
 
 
 
