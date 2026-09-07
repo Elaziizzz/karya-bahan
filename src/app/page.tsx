@@ -266,7 +266,7 @@ export default function POSDashboard() {
             item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
             item.display_quantity + ' ' + item.display_unit,
             item.subtotal,
-            'Ã¢Å“â€¦ VALID'
+            'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ VALID'
           ]);
           fetch('/api/sheets/sync', {
             method: 'POST',
@@ -335,7 +335,7 @@ export default function POSDashboard() {
   }, [highlightedIndex]);
 
   const selectMaterial = (m: Material) => {
-    if (m.current_stock <= 0) return;
+    if (m.current_stock <= 0) { showToast("Stok barang ini kosong (0)! Silakan restok dulu.", "error"); return; }
     setSelectedMaterialId(m.id);
     setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
     setIsDropdownOpen(false);
@@ -745,6 +745,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 

@@ -746,7 +746,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 10 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold' : ''}`}>
-                    {item.current_stock} {item.current_stock <= 10 && 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â'}
+                    {item.current_stock} {item.current_stock <= 10 && ' \u26A0\uFE0F'}
                   </span>
                 </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
@@ -789,6 +789,7 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
 
 
 
