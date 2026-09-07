@@ -71,7 +71,7 @@ export default function POSDashboard() {
   const quantityInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchData(activeStore);
+    fetchData("karya_bahan");
 
     const materialSubscription = supabase
       .channel("public:materials")
@@ -269,7 +269,7 @@ export default function POSDashboard() {
             item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
             item.display_quantity + ' ' + item.display_unit,
             item.subtotal,
-            'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ VALID'
+            'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ VALID'
           ]);
           fetch('/api/sheets/sync', {
             method: 'POST',
@@ -618,72 +618,59 @@ export default function POSDashboard() {
             
             <div className="border border-black bg-white overflow-hidden flex flex-col min-h-[400px]">
               <div className="overflow-x-auto flex-1">
-                
-              <div className="flex flex-col gap-4">
-                {(() => {
-                  const grouped = transactions.reduce((acc, t) => {
-                    const key = t.created_at;
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(t);
-                    return acc;
-                  }, {} as Record<string, Transaction[]>);
-                  
-                  const notas = Object.entries(grouped).sort((a,b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
-                  
-                  if (notas.length === 0) {
-                    return <div className="p-8 text-center text-gray-500 italic border border-black">Belum ada transaksi hari ini.</div>;
-                  }
-
-                  return notas.map(([time, items], idx) => {
-                    const totalNota = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
-                    return (
-                      <div key={time} className="border-2 border-black bg-white overflow-hidden">
-                        <div className="bg-gray-100 p-3 border-b-2 border-black flex justify-between items-center font-bold">
-                          <div>
-                            <span className="bg-black text-white px-2 py-1 text-xs mr-2">NOTA #{notas.length - idx}</span>
-                            {format(new Date(time), "HH:mm")}
-                          </div>
-                          <div className="text-blue-700">Total: Rp {totalNota.toLocaleString("id-ID")}</div>
-                        </div>
-                        <table className="w-full text-left text-sm whitespace-nowrap">
-                          <tbody>
-                            {items.map(t => (
-                              <tr key={t.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                                <td className="p-3 w-1/2">
-                                  {t.materials?.name || "Unknown"}
-                                </td>
-                                <td className="p-3 text-right font-mono">
-                                  {t.quantity}
-                                </td>
-                                <td className="p-3 text-right font-mono text-green-600 font-bold">
-                                  Rp {(t.total_price || 0).toLocaleString("id-ID")}
-                                </td>
-                                <td className="p-3 text-center w-32">
-                                  <div className="flex justify-center gap-2">
-                                    <button 
-                                      onClick={() => (() => { setEditingTx(t); setEditQty(String(t.quantity)); })()}
-                                      className="text-xs border border-blue-500 text-blue-600 px-2 py-1 hover:bg-blue-600 hover:text-white transition-swiss"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button 
-                                      onClick={() => softDeleteTransaction(t.id)}
-                                      className="text-xs border border-red-500 text-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-swiss"
-                                    >
-                                      Hapus
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-gray-100 uppercase tracking-wide">
+                      <th className="p-3 border-b-2 border-black font-bold w-12 text-center">No</th>
+                      <th className="p-3 border-b-2 border-black font-bold">Barang</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Qty</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Harga/Pcs</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-right">Subtotal</th>
+                      <th className="p-3 border-b-2 border-black font-bold text-center w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-gray-500 italic">Keranjang kosong. Tambahkan barang di sebelah kiri.</td>
+                      </tr>
+                    ) : (
+                      cart.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50 border-b border-gray-200">
+                          <td className="p-3 text-center">{index + 1}</td>
+                          <td className="p-3 font-medium">
+                            {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
+                            {item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}
+                          </td>
+                          <td className="p-3 text-right font-mono">
+                              <div className="text-lg">{item.display_quantity} <span className="text-xs text-gray-500">{item.display_unit}</span></div>
+                            </td>
+                          <td className="p-3 text-right font-mono">
+                            <div className="flex items-center justify-end gap-1">
+                              <span>Rp</span>
+                              <input
+                                type="text"
+                                className="w-24 bg-white border border-gray-300 px-2 py-1 text-right focus:outline-none focus:border-black rounded-none"
+                                value={item.display_price === 0 ? "" : item.display_price}
+                                onChange={(e) => updateItemPrice(index, e.target.value)}
+                              />
+                            </div>
+                          </td>
+                          <td className="p-3 text-right font-mono font-bold">Rp {item.subtotal.toLocaleString("id-ID")}</td>
+                          <td className="p-3 text-center">
+                            <button 
+                              onClick={() => removeFromCart(index)}
+                              className="text-red-500 hover:text-red-700 transition-colors p-1"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
               
               <div className="bg-gray-100 p-4 border-t-2 border-black">
@@ -712,56 +699,80 @@ export default function POSDashboard() {
             RECENT TRANSACTIONS
           </h2>
           <div className="overflow-x-auto border border-black bg-white">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead>
-                <tr className="bg-gray-100 uppercase tracking-wide">
-                  <th className="p-3 border-b-2 border-black font-bold">Date</th>
-                  <th className="p-3 border-b-2 border-black font-bold">Material</th>
-                  <th className="p-3 border-b-2 border-black font-bold text-right">Qty</th>
-                  <th className="p-3 border-b-2 border-black font-bold text-right">Total (Rp)</th>
-                  <th className="p-3 border-b-2 border-black font-bold text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-500 italic">No active transactions found.</td>
-                  </tr>
-                ) : (
-                  transactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-50">
-                      <td className="p-3 border-b border-gray-200">
-                        {format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy, HH:mm")}
-                      </td>
-                      <td className="p-3 border-b border-gray-200 font-medium">
-                        {t.materials?.name || "Unknown"}
-                      </td>
-                      <td className="p-3 border-b border-gray-200 text-right font-mono">
-                        {t.quantity}
-                      </td>
-                      <td className="p-3 border-b border-gray-200 text-right font-mono font-bold text-green-600">
-                        + {t.total_price.toLocaleString("id-ID")}
-                      </td>
-                      <td className="p-3 border-b border-gray-200 text-center">
-                        <button 
-                          onClick={() => softDeleteTransaction(t.id)}
-                          className="text-xs border border-red-500 text-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-swiss active-press"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+
+              <div className="flex flex-col gap-4 bg-gray-100 p-4">
+                {(() => {
+                  const grouped = transactions.reduce((acc, t) => {
+                    const key = t.created_at;
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(t);
+                    return acc;
+                  }, {} as Record<string, Transaction[]>);
+                  
+                  const notas = Object.entries(grouped).sort((a,b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+                  
+                  if (notas.length === 0) {
+                    return <div className="p-8 text-center text-gray-500 italic border border-black bg-white">Belum ada transaksi hari ini.</div>;
+                  }
+
+                  return notas.map(([time, items], idx) => {
+                    const totalNota = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
+                    return (
+                      <div key={time} className="border-2 border-black bg-white overflow-hidden shadow-sm">
+                        <div className="bg-black text-white p-3 flex justify-between items-center font-bold">
+                          <div>
+                            <span className="bg-white text-black px-2 py-1 text-xs mr-2 font-black">NOTA #{notas.length - idx}</span>
+                            {format(new Date(time), "HH:mm")}
+                          </div>
+                          <div className="text-green-400">Total: Rp {totalNota.toLocaleString("id-ID")}</div>
+                        </div>
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                          <tbody>
+                            {items.map(t => (
+                              <tr key={t.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                                <td className="p-3 w-1/2 font-bold text-gray-800">
+                                  {t.materials?.name || "Unknown"}
+                                </td>
+                                <td className="p-3 text-right font-mono text-gray-600">
+                                  {t.quantity} x
+                                </td>
+                                <td className="p-3 text-right font-mono text-green-600 font-bold">
+                                  Rp {(t.total_price || 0).toLocaleString("id-ID")}
+                                </td>
+                                <td className="p-3 text-center w-32 border-l border-gray-100">
+                                  <div className="flex justify-center gap-2">
+                                    <button 
+                                      onClick={() => { setEditingTx(t); setEditQty(String(t.quantity)); }}
+                                      className="text-xs border border-blue-500 text-blue-600 px-2 py-1 hover:bg-blue-600 hover:text-white transition-swiss active-press"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button 
+                                      onClick={() => softDeleteTransaction(t.id)}
+                                      className="text-xs border border-red-500 text-red-600 px-2 py-1 hover:bg-red-600 hover:text-white transition-swiss active-press"
+                                    >
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+</div>
         </div>
       </div>
     </div>
   );
 }
-
 
 
 
