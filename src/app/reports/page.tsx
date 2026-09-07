@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
@@ -350,45 +350,19 @@ export default function ReportsPage() {
       const profit = isOut ? (g.total_price - g.cost_price) : 0;
       const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim() || 'Barang'}`).join(', ');
       
-      const row = worksheet.addRow({
+      const row = sheet.addRow({
         no: index + 1,
-        tanggal: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
-        tipe: isOut ? 'NOTA (OUT)' : 'NOTA (IN)',
+        date: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
+        type: isOut ? 'NOTA (OUT)' : 'NOTA (IN)',
         material: materialText,
         qty: g.quantity,
         modal: g.cost_price,
         jual: g.total_price,
-        total: g.total_price,
+        total: isOut ? g.total_price : -g.total_price,
         profit: profit
       });
-      if (isOut) {
-        row.font = { bold: true, color: { argb: 'FF004E98' } };
-      } else {
-        row.font = { bold: true, color: { argb: 'FF980000' } };
-      }
-    });
 
-      } else {
-        const profit = g.total_price - g.cost_price;
-        const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
-        
-        const row = worksheet.addRow({
-          no: index + 1,
-          tanggal: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
-          tipe: 'NOTA (OUT)',
-          material: materialText,
-          qty: g.quantity,
-          modal: g.cost_price,
-          jual: g.total_price,
-          total: g.total_price,
-          profit: profit
-        });
-        row.font = { bold: true, color: { argb: 'FF004E98' } };
-      }
-    });
-
-
-      // Alignments: dates left-aligned, numbers right-aligned, text left-aligned
+      // Alignments: dates left-aligned, numbers right-aligned, text left-aligned dates left-aligned, numbers right-aligned, text left-aligned
       row.getCell("no").alignment = { vertical: 'middle', horizontal: 'center' };
       row.getCell("date").alignment = { vertical: 'middle', horizontal: 'left' };
       row.getCell("type").alignment = { vertical: 'middle', horizontal: 'center' };
@@ -400,11 +374,11 @@ export default function ReportsPage() {
       row.getCell("profit").alignment = { vertical: 'middle', horizontal: 'right' };
 
       // Styling based on type
-      row.getCell("type").font = { color: { argb: isBeli ? "FF990000" : "FF006600" }, bold: true };
+      row.getCell("type").font = { color: { argb: !isOut ? "FF990000" : "FF006600" }, bold: true };
       
       // Values formatting
-      row.getCell("total").font = { color: { argb: isBeli ? "FFCC0000" : "FF0000FF" }, bold: true };
-      if (!isBeli) row.getCell("profit").font = { color: { argb: "FF009900" }, bold: true };
+      row.getCell("total").font = { color: { argb: !isOut ? "FFCC0000" : "FF0000FF" }, bold: true };
+      if (isOut) row.getCell("profit").font = { color: { argb: "FF009900" }, bold: true };
 
       // Number formatting for currency and quantity columns
       row.getCell("qty").numFmt = '#,##0';
@@ -740,6 +714,7 @@ export default function ReportsPage() {
     </div>
   );
 }
+
 
 
 
