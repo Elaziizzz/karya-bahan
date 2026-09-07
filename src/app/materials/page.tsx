@@ -382,7 +382,7 @@ export default function MaterialsPage() {
           <p className="text-gray-500 mt-2">Manage your products, base prices, and starting stock.</p>
         </div>
         
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 sticky top-0 z-40 bg-[#f4f4f4] pt-4 pb-4 border-b-2 border-black -mx-4 px-4 shadow-sm">
           <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
