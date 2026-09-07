@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
+import { createPortal } from "react-dom";
 import { Package, PlusCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -445,7 +446,7 @@ export default function RestockPage() {
     </div>
     
       {/* Edit Restock Transaction Modal */}
-      {editingTx && (
+      {editingTx && typeof document !== 'undefined' ? createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 max-w-sm w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
             <h2 className="text-xl font-bold mb-4 uppercase">Edit Restock Qty</h2>
@@ -506,7 +507,7 @@ export default function RestockPage() {
             </div>
           </div>
         </div>
-      )}
+      ), document.body) : null}
 </div>
     </>
   );

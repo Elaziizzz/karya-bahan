@@ -374,7 +374,7 @@ export default function MaterialsPage() {
   return (
     <>
       {/* --- MANUAL ADD / EDIT MODAL --- */}
-        {isModalOpen && (
+        {isModalOpen && typeof document !== 'undefined' ? createPortal(
           <div className="fixed inset-0 bg-black/50 flex items-start md:items-center justify-center p-4 z-50 overflow-y-auto py-12">
             <div className="bg-white p-6 max-w-3xl w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
               <h2 className="text-xl font-bold mb-4 uppercase flex items-center gap-2">
@@ -707,9 +707,9 @@ export default function MaterialsPage() {
             )}
           </div>
         </div>
-      )}
+      ), document.body) : null}
 
-      {/* --- INVENTORY TABLE --- */}
+        {/* --- INVENTORY TABLE --- */}
       <div className="overflow-x-auto border border-black shadow-sm">
         <table className="w-full text-left text-sm whitespace-nowrap">
           <thead>
