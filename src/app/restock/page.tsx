@@ -25,9 +25,7 @@ type Transaction = {
   total_price: number;
   created_at: string;
   deleted_at: string | null;
-  materials?: {
-    name: string;
-  };
+  materials?: { name: string; code?: string; };
 };
 
 export default function RestockPage() {
@@ -574,6 +572,7 @@ export default function RestockPage() {
 </div>
   );
 }
+
 
 
 

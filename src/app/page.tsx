@@ -27,9 +27,7 @@ type Transaction = {
   total_price: number;
   created_at: string;
   deleted_at: string | null;
-  materials?: {
-    name: string;
-  };
+  materials?: { name: string; code?: string; };
 };
 
 type CartItem = {
@@ -856,6 +854,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 
