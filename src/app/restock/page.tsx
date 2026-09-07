@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
@@ -88,8 +88,7 @@ export default function RestockPage() {
     const { data } = await supabase
       .from("materials")
       .select("*")
-      .eq("store", activeStore)
-      .order("name");
+      .eq("store", activeStore).is("deleted_at", null).order("name");
     if (data) setMaterials(data);
   }
 
@@ -443,6 +442,7 @@ export default function RestockPage() {
     </div>
   );
 }
+
 
 
 

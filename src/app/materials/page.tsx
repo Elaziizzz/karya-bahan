@@ -107,7 +107,7 @@ export default function MaterialsPage() {
     const { data } = await supabase
       .from("materials")
       .select("*")
-      .eq("store", store)
+      .eq("store", store).is("deleted_at", null)
       .order("name");
     if (data) setMaterials(data);
     setLoading(false);
@@ -181,7 +181,7 @@ export default function MaterialsPage() {
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this material?")) return;
 
-    const { error } = await supabase.from("materials").delete().eq("id", id);
+    const { error } = await supabase.from("materials").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) {
       showToast("Gagal menghapus material: " + error.message, "error");
     } else {
@@ -296,7 +296,7 @@ export default function MaterialsPage() {
 
   const validateAndCheckConflicts = async (data: any[]) => {
     setLoadingStep("Memvalidasi dan mengecek konflik...");
-    const { data: existingMaterials } = await supabase.from("materials").select("*").eq("store", activeStore);
+    const { data: existingMaterials } = await supabase.from("materials").select("*").eq("store", activeStore).is("deleted_at", null);
 
     const processedData: ImportRow[] = data.map((item, index) => {
       let status: 'valid' | 'warning' | 'error' = 'valid';
@@ -789,6 +789,8 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
+
 
 
 

@@ -266,7 +266,7 @@ export default function POSDashboard() {
             item.material.name.replace(/-\s*\[.*?\]$/, '').trim(),
             item.display_quantity + ' ' + item.display_unit,
             item.subtotal,
-            'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ VALID'
+            'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ VALID'
           ]);
           fetch('/api/sheets/sync', {
             method: 'POST',
@@ -745,6 +745,7 @@ export default function POSDashboard() {
     </div>
   );
 }
+
 
 
 
