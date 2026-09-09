@@ -436,7 +436,7 @@ export default function POSDashboard() {
   const selectMaterial = (m: Material) => {
     if (m.current_stock <= 0) { showToast("Stok barang ini kosong (0)! Silakan restok dulu.", "error"); return; }
     setSelectedMaterialId(m.id);
-    setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
+    setSearchQuery(m.code ? `[${m.code}] ${displayMaterialName(m.name)}` : displayMaterialName(m.name));
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
     setBuyMode('ecer');
@@ -635,7 +635,7 @@ export default function POSDashboard() {
                         >
                           <div>
                             {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{m.code}</span>}
-                            <span>{m.name}</span>
+                            <span>{displayMaterialName(m.name)}</span>
                           </div>
                           <div className="text-xs text-gray-500 font-mono">Stock: {m.current_stock}</div>
                         </div>
@@ -834,7 +834,7 @@ export default function POSDashboard() {
                                 <tr key={item.id} className={`${itemIdx !== items.length - 1 ? 'border-b border-gray-200' : ''} hover:bg-gray-50`}>
                                   <td className="p-3 font-bold text-gray-800">
                                     {item.materials?.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-black">[{item.materials.code}]</span>}
-                                    {item.materials?.name}
+                                    {displayMaterialName(item.materials?.name)}
                                   </td>
                                   <td className="p-3 text-center w-24 font-mono">{item.quantity} x</td>
                                   <td className="p-3 text-right text-green-700 font-bold font-mono w-32">Rp {item.total_price.toLocaleString("id-ID")}</td>

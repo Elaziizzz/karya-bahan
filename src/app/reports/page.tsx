@@ -458,9 +458,8 @@ export default function ReportsPage() {
                 </select>
               </div>
               
-              {investors.length > 0 && (
-                <div>
-                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Investor</label>
+              <div>
+                    <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Investor</label>
                   <select 
                     value={selectedInvestor}
                     onChange={(e) => setSelectedInvestor(e.target.value)}
@@ -471,8 +470,7 @@ export default function ReportsPage() {
                       <option key={inv} value={inv}>{inv}</option>
                     ))}
                   </select>
-                </div>
-              )}
+                  </div>
             </div>
         </div>
         {selectedFilter === "CUSTOM_DATE" && (

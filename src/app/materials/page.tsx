@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Package, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
+import { Package, User, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -132,8 +132,11 @@ export default function MaterialsPage() {
     } else if (formData.baseUnit && formData.baseUnit !== 'Pcs') {
       finalName = `${formData.name} - [${formData.baseUnit}]`;
     }
+      if (formData.investor && formData.investor.trim() !== '') {
+        finalName += ` = (${formData.investor.trim().toUpperCase()})`;
+      }
 
-    if (editingId) {
+      if (editingId) {
       const { error } = await supabase
         .from("materials")
         .update({
@@ -759,7 +762,18 @@ export default function MaterialsPage() {
             ) : filteredMaterials.map((item) => (
               <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-swiss group">
                 <td className="p-4 border-r border-gray-200 font-mono text-xs">{item.code || "-"}</td>
-                <td className="p-4 border-r border-gray-200 font-bold group-hover:text-blue-600 transition-colors">{item.name}</td>
+                <td className="p-4 border-r border-gray-200 group-hover:text-blue-600 transition-colors">
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className="font-bold">
+                        {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
+                      </span>
+                      {item.name.match(/\s*=\s*\((.*?)\)$/) && (
+                        <span className="text-[10px] bg-yellow-200 text-yellow-900 border border-yellow-400 px-2 py-0.5 font-bold uppercase rounded-sm shadow-sm inline-flex items-center gap-1">
+                          <User className="w-3 h-3" /> Investor: {item.name.match(/\s*=\s*\((.*?)\)$/)?.[1]}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 0 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold text-xs' : ''}`}>
                     {item.current_stock} {item.current_stock <= 0 && '(Habis)'}
