@@ -510,7 +510,7 @@ export default function POSDashboard() {
                 </div>
                 <div className="text-right">
                   <div className="mb-4 text-transparent">Hal : 1</div>
-                  <div className="flex gap-2 justify-end"><span className="w-20 text-left">Tanggal</span>: <span>{format(receiptData.date, "dd-MMM-yyyy")}</span></div>
+                  <div className="flex gap-2 justify-end"><span className="w-20 text-left">Tanggal</span>: <span>{format(receiptData.date, "dd-MMM-yyyy HH:mm")}</span></div>
                   <div className="flex gap-2 justify-end"><span className="w-20 text-left">No. Faktur</span>: <span>{receiptData.invoiceNo}</span></div>
                 </div>
               </div>
