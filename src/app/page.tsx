@@ -40,6 +40,13 @@ type CartItem = {
   pack_multiplier: number;
 };
 
+
+// Helper to hide investor from Kasir display
+const displayMaterialName = (name: string | undefined | null) => {
+  if (!name) return "";
+  return name.replace(/\s*=\s*\((.*?)\)$/, "");
+};
+
 export default function POSDashboard() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
