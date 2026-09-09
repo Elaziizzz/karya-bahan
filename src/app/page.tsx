@@ -53,6 +53,12 @@ export default function POSDashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState<"LUNAS" | "DP">("LUNAS");
+  const [dpAmount, setDpAmount] = useState("");
+
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [editQty, setEditQty] = useState("");
   

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
       // payload is an array of transaction arrays
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${year}!A:I`,
+        range: `${year}!A:N`,
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       // payload is a transaction ID
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${year}!A:I`,
+        range: `${year}!A:N`,
       });
 
       const rows = res.data.values;
