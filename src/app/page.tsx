@@ -27,6 +27,10 @@ type Transaction = {
   total_price: number;
   created_at: string;
   deleted_at: string | null;
+  payment_status?: string;
+  dp_amount?: number;
+  customer_name?: string;
+  customer_phone?: string;
   materials?: { name: string; code?: string; };
 };
 
