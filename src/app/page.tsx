@@ -77,6 +77,10 @@ export default function POSDashboard() {
     date: Date;
     items: CartItem[];
     total: number;
+    customerName: string;
+    customerPhone: string;
+    paymentStatus: string;
+    dpAmount: number;
   } | null>(null);
 
   const quantityInputRef = useRef<HTMLInputElement>(null);
@@ -395,11 +399,15 @@ export default function POSDashboard() {
 
       showToast("Transaksi berhasil disimpan", "success");
       setReceiptData({
-        invoiceNo,
-        date: now,
-        items: [...cart],
-        total: cartTotal
-      });
+          invoiceNo,
+          date: now,
+          items: [...cart],
+          total: cartTotal,
+          customerName: customerName || "-",
+          customerPhone: customerPhone || "-",
+          paymentStatus,
+          dpAmount: paymentStatus === 'DP' ? (Number(dpAmount) || 0) : cartTotal
+        });
       setCart([]);
     } else {
       console.error(error);
