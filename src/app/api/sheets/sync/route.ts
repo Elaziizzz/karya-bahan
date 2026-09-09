@@ -105,7 +105,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
 
-        if (action === 'lunas') {
+    if (action === 'lunas' || action === 'pelunasan') {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `${year}!A:N`,
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
           range: `${year}!L${rowIndex + 1}:N${rowIndex + 1}`,
           valueInputOption: 'RAW',
           requestBody: {
-            values: [['LUNAS', payload.total, 0]],
+            values: [[payload.status || 'LUNAS', payload.dp ?? payload.total, payload.sisa ?? 0]],
           },
         });
       }
