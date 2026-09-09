@@ -43,6 +43,7 @@ export default function ReportsPage() {
   const [selectedFilter, setSelectedFilter] = useState<string>("TODAY");
   const [customDate, setCustomDate] = useState<string>("");
   const [customMonth, setCustomMonth] = useState<string>("");
+  const [selectedInvestor, setSelectedInvestor] = useState<string>("Semua");
 
   const [initialBudget, setInitialBudget] = useState<number>(0);
   const [isEditingBudget, setIsEditingBudget] = useState(false);
@@ -119,28 +120,31 @@ export default function ReportsPage() {
 
   const filteredTransactions = useMemo(() => {
     const today = new Date();
-    
-    if (selectedFilter === "ALL") return allTransactions;
+    let result = allTransactions;
+
     if (selectedFilter === "TODAY") {
-      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
-    }
-    if (selectedFilter === "YESTERDAY") {
+      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
+    } else if (selectedFilter === "YESTERDAY") {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
+      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
+    } else if (selectedFilter === "THIS_MONTH") {
+      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === format(today, "yyyy-MM"));
+    } else if (selectedFilter === "CUSTOM_DATE" && customDate) {
+      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === customDate);
+    } else if (selectedFilter === "CUSTOM_MONTH" && customMonth) {
+      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === customMonth);
     }
-    if (selectedFilter === "THIS_MONTH") {
-      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "MMMM yyyy") === format(today, "MMMM yyyy"));
+
+    if (selectedInvestor !== "Semua") {
+      result = result.filter(t => {
+        const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+        return im && im[1].trim() === selectedInvestor;
+      });
     }
-    if (selectedFilter === "CUSTOM_DATE" && customDate) {
-      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === customDate);
-    }
-    if (selectedFilter === "CUSTOM_MONTH" && customMonth) {
-      return allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === customMonth);
-    }
-    
-    return allTransactions;
-  }, [allTransactions, selectedFilter, customDate, customMonth]);
+
+    return result;
+  }, [allTransactions, selectedFilter, customDate, customMonth, selectedInvestor]);
 
   // Calculations for P&L Dashboard
   
@@ -379,9 +383,9 @@ export default function ReportsPage() {
     };
 
     if (selectedInvestor === "Semua" && investors.length > 0) {
-      generateSheet("Semua Transaksi", filteredTransactions);
+      generateSheet("Semua Transaksi", groupedTransactions);
       investors.forEach(inv => {
-        const invTxs = filteredTransactions.map(group => {
+        const invTxs = groupedTransactions.map(group => {
            return group.filter(t => {
              const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
              return im && im[1].trim() === inv;
@@ -393,7 +397,7 @@ export default function ReportsPage() {
         }
       });
     } else {
-      generateSheet(selectedInvestor === "Semua" ? "Laporan PnL" : `Laporan ${selectedInvestor}`, filteredTransactions);
+      generateSheet(selectedInvestor === "Semua" ? "Laporan PnL" : `Laporan ${selectedInvestor}`, groupedTransactions);
     }
 
     const buffer = await workbook.xlsx.writeBuffer();

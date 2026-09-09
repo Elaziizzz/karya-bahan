@@ -37,7 +37,7 @@ export default function MaterialsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '',
+  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', investor: '',
     name: "", unit_info: "",
     code: "",
     cost_price: "",
