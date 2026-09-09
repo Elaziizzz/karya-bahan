@@ -507,7 +507,7 @@ export default function RestockPage() {
             </div>
           </div>
         </div>
-      ), document.body) : null}
+      , document.body) : null}
 </div>
     </>
   );

@@ -525,9 +525,8 @@ export default function MaterialsPage() {
               </form>
             </div>
           </div>
-        )}
+        , document.body) : null}
 
-      
       <div className="sticky top-0 z-40 bg-[#f8f9fa] border-b-2 border-black shadow-sm px-4 md:px-8 py-4 mb-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4">
             <div>
@@ -721,7 +720,7 @@ export default function MaterialsPage() {
             )}
           </div>
         </div>
-      ), document.body) : null}
+      )}
 
         {/* --- INVENTORY TABLE --- */}
       <div className="overflow-x-auto border border-black shadow-sm">
