@@ -234,6 +234,33 @@ export default function POSDashboard() {
     fetchData(activeStore);
   }
 
+  async function lunasiNota(items: Transaction[]) {
+    const totalNota = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
+    const dp = Number(items[0].dp_amount) || 0;
+    const sisa = totalNota - dp;
+    if (!confirm(`Konfirmasi pelunasan sisa tagihan sebesar Rp ${sisa.toLocaleString("id-ID")} untuk nota ini?`)) return;
+    
+    setLoading(true);
+    const ids = items.map(t => t.id);
+    const { error } = await supabase.from("transactions").update({ payment_status: 'LUNAS', dp_amount: totalNota }).in("id", ids);
+    
+    if (error) {
+      alert("Gagal memproses pelunasan: " + error.message);
+    } else {
+      showToast("Pelunasan berhasil diproses!", "success");
+      const invoiceNo = `KB-${new Date(items[0].created_at || 0).getTime()}`;
+      try {
+        fetch('/api/sheets/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'lunas', payload: { invoiceNo, total: totalNota }, year: new Date().getFullYear().toString() })
+        }).catch(console.error);
+      } catch (e) { console.error(e); }
+    }
+    setLoading(false);
+    fetchData(activeStore);
+  }
+
   async function deleteFullNota(items: Transaction[]) {
     if (!confirm("Hapus Nota ini secara permanen? Stok akan dikembalikan seperti semula.")) return;
     
@@ -903,7 +930,13 @@ export default function POSDashboard() {
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="text-green-400 font-bold">Total: Rp {totalNota.toLocaleString("id-ID")}</div>
-                              <div className="flex gap-2">
+                                {items[0]?.payment_status === 'DP' && (
+                                  <div className="bg-yellow-500 text-black px-2 py-0.5 text-xs font-bold animate-pulse rounded border border-black">BELUM LUNAS</div>
+                                )}
+                                <div className="flex gap-2">
+                                  {items[0]?.payment_status === 'DP' && (
+                                    <button onClick={() => lunasiNota(items)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-green-800 shadow-[2px_2px_0_0_#000]">LUNASKAN</button>
+                                  )}
                                 <button onClick={() => editFullNota(items)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-blue-800">Edit</button>
                                 <button onClick={() => deleteFullNota(items)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-red-800">Hapus</button>
                               </div>
