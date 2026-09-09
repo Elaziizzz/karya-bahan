@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -403,7 +404,7 @@ export default function MaterialsPage() {
                 <div className="grid grid-cols-2 gap-4 items-start">
                     <div className="col-span-2">
                       <label className="block text-xs font-bold mb-1 uppercase">Investor / Pemilik Barang (Opsional)</label>
-                      <input type="text" list="investor-list" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.investor} onChange={(e) => setFormData({...formData, investor: e.target.value.toUpperCase()})} placeholder="Ketik atau pilih investor..." />
+                      <input type="text" list="investor-list" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.investor || ""} onChange={(e) => setFormData({...formData, investor: e.target.value.toUpperCase()})} placeholder="Ketik atau pilih investor..." />
                       <datalist id="investor-list">
                         {Array.from(new Set(materials.map(m => {
                           const im = m.name.match(/\s*=\s*\((.*?)\)$/);

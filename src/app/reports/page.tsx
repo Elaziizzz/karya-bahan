@@ -111,7 +111,7 @@ export default function ReportsPage() {
   // Filtered transactions
   const investors = useMemo(() => {
     const list = new Set<string>();
-    allTransactions.forEach(t => {
+    allTransactions.forEach((t: any) => {
       const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
       if (im) list.add(im[1].trim());
     });
@@ -123,21 +123,21 @@ export default function ReportsPage() {
     let result = allTransactions;
 
     if (selectedFilter === "TODAY") {
-      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
+      result = allTransactions.filter((t: any) => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(today, "yyyy-MM-dd"));
     } else if (selectedFilter === "YESTERDAY") {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
+      result = allTransactions.filter((t: any) => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === format(yesterday, "yyyy-MM-dd"));
     } else if (selectedFilter === "THIS_MONTH") {
-      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === format(today, "yyyy-MM"));
+      result = allTransactions.filter((t: any) => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === format(today, "yyyy-MM"));
     } else if (selectedFilter === "CUSTOM_DATE" && customDate) {
-      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === customDate);
+      result = allTransactions.filter((t: any) => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM-dd") === customDate);
     } else if (selectedFilter === "CUSTOM_MONTH" && customMonth) {
-      result = allTransactions.filter(t => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === customMonth);
+      result = allTransactions.filter((t: any) => format((t.created_at ? new Date(t.created_at) : new Date(0)), "yyyy-MM") === customMonth);
     }
 
     if (selectedInvestor !== "Semua") {
-      result = result.filter(t => {
+      result = result.filter((t: any) => {
         const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
         return im && im[1].trim() === selectedInvestor;
       });
@@ -153,7 +153,7 @@ export default function ReportsPage() {
     const groups: any[] = [];
 
     // filteredTransactions is sorted by created_at descending
-    filteredTransactions.forEach(t => {
+    filteredTransactions.forEach((t: any) => {
       const timeKey = t.created_at; // Exact timestamp
       const isOut = t.type === 'OUT';
       
@@ -180,8 +180,8 @@ export default function ReportsPage() {
     
     return groups;
   }, [filteredTransactions]);
-  const outTransactions = filteredTransactions.filter(t => t.type === 'OUT');
-  const inTransactions = filteredTransactions.filter(t => t.type === 'IN');
+  const outTransactions = filteredTransactions.filter((t: any) => t.type === 'OUT');
+  const inTransactions = filteredTransactions.filter((t: any) => t.type === 'IN');
 
   const totalSalesRevenue = outTransactions.reduce((sum, t) => sum + Number(t.total_price), 0);
   const totalPurchaseCost = inTransactions.reduce((sum, t) => sum + Number(t.total_price), 0);
@@ -227,7 +227,7 @@ export default function ReportsPage() {
     const tableColumn = ["Tanggal", "Tipe", "Material", "Qty", "H. Modal/Pcs", "H. Jual/Pcs", "Total (Rp)", "Profit (Rp)"];
     const tableRows: any[] = [];
 
-    filteredTransactions.forEach(t => {
+    filteredTransactions.forEach((t: any) => {
       const typeStr = t.type === 'IN' ? 'BELI (IN)' : 'JUAL (OUT)';
       const priceStr = (t.type === 'IN' ? '-' : '+') + t.total_price.toLocaleString("id-ID");
       const profit = t.type === 'OUT' ? (t.total_price - (t.quantity * (t.cost_price || 0))) : 0;
@@ -386,7 +386,7 @@ export default function ReportsPage() {
       generateSheet("Semua Transaksi", groupedTransactions);
       investors.forEach(inv => {
         const invTxs = groupedTransactions.map(group => {
-           return group.filter(t => {
+           return group.filter((t: any) => {
              const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
              return im && im[1].trim() === inv;
            });
