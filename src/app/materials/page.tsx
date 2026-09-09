@@ -1,5 +1,5 @@
-import { createPortal } from "react-dom";
 "use client";
+import { createPortal } from "react-dom";
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
