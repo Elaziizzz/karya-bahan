@@ -309,10 +309,10 @@ export default function ReportsPage() {
         row.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
           if (colNumber <= 9) {
             cell.border = {
-              top: {style:'thin', color: {argb:'FFD1D5DB'}},
-              left: {style:'thin', color: {argb:'FFD1D5DB'}},
-              bottom: {style:'thin', color: {argb:'FFD1D5DB'}},
-              right: {style:'thin', color: {argb:'FFD1D5DB'}}
+              top: {style:'thin', color: {argb:'FF000000'}},
+              left: {style:'thin', color: {argb:'FF000000'}},
+              bottom: {style:'thin', color: {argb:'FF000000'}},
+              right: {style:'thin', color: {argb:'FF000000'}}
             };
           }
         });
@@ -322,7 +322,7 @@ export default function ReportsPage() {
         no: "NO", date: "TANGGAL", type: "TIPE", material: "NAMA BARANG", qty: "QTY", modal: "HARGA MODAL", jual: "HARGA JUAL", total: "TOTAL TRANSAKSI", profit: "PROFIT/RUGI"
       });
       headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } }; // Blue background
+      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } }; // Blue background
       headerRow.alignment = { horizontal: "center", vertical: "middle" };
       addBorders(headerRow);
 
@@ -385,7 +385,7 @@ export default function ReportsPage() {
            no: "", date: "", type: "", material: "SUBTOTAL NOTA:", qty: "", modal: "", jual: "", total: notaTotal, profit: isOutGroup ? notaProfit : "-"
         });
         subRow.font = { bold: true, color: { argb: "FF374151" } };
-        subRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } }; // Gray background
+        subRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCCCCCC" } }; // Gray background
         addBorders(subRow);
         
         subRow.getCell(8).numFmt = '"Rp" #,##0';
