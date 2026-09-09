@@ -44,7 +44,7 @@ async function ensureSheetExists(year: string, sheets: any) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${year}!A1:I1`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       requestBody: {
         values: [['ID Transaksi', 'Tanggal', 'Waktu', 'Toko', 'Tipe', 'Nama Barang', 'Qty', 'Total Harga', 'Status']],
       },
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: `${year}!A:I`,
-        valueInputOption: 'USER_ENTERED',
+        valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {
           values: payload,
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${year}!I${rowIndex + 1}`,
-          valueInputOption: 'USER_ENTERED',
+          valueInputOption: 'RAW',
           requestBody: {
             values: [action === 'delete' ? ['Ã¢ÂÅ’ DIHAPUS (BATAL)'] : ['Ã¢Å“â€¦ VALID']],
           },

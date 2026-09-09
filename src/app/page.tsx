@@ -360,7 +360,7 @@ export default function POSDashboard() {
         try {
           const year = now.getFullYear().toString();
           // Group everything into ONE Nota row for Spreadsheet
-          const notaItemsText = cart.map(item => `${item.display_quantity} ${item.display_unit} ${item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
+          const notaItemsText = cart.map(item => `${item.display_quantity} ${item.display_unit} ${displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
           const grandTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
           
           const sheetPayload = [[
@@ -531,7 +531,7 @@ export default function POSDashboard() {
                       <td className="py-1 align-top">{idx + 1}</td>
                       <td className="py-1 align-top">
                         {item.material.code ? `[${item.material.code}] ` : ''}
-                        {item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}
+                        {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
                       </td>
                       <td className="py-1 text-right align-top">
                         {item.display_quantity} {item.display_unit.toUpperCase()}
@@ -743,7 +743,7 @@ export default function POSDashboard() {
                           <td className="p-3 text-center">{index + 1}</td>
                           <td className="p-3 font-medium">
                             {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
-                            {item.material.name.replace(/-\s*\[.*?\]$/, '').trim()}
+                            {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
                           </td>
                           <td className="p-3 text-right font-mono">
                               <div className="text-lg">{item.display_quantity} <span className="text-xs text-gray-500">{item.display_unit}</span></div>

@@ -382,22 +382,25 @@ export default function ReportsPage() {
       else if (totalNetProfit < 0) gp.getCell(9).font = { bold: true, color: { argb: "FFFF0000" } };
     };
 
+    // Extract the items array from each nota group
+    const groupedItems = groupedTransactions.map((nota: any) => nota.items);
+
     if (selectedInvestor === "Semua" && investors.length > 0) {
-      generateSheet("Semua Transaksi", groupedTransactions);
+      generateSheet("Semua Transaksi", groupedItems);
       investors.forEach(inv => {
-        const invTxs = groupedTransactions.map(group => {
+        const invTxs = groupedItems.map((group: any) => {
            return group.filter((t: any) => {
              const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
              return im && im[1].trim() === inv;
            });
-        }).filter(group => group.length > 0);
+        }).filter((group: any) => group.length > 0);
         
         if (invTxs.length > 0) {
            generateSheet(`Laporan ${inv}`, invTxs);
         }
       });
     } else {
-      generateSheet(selectedInvestor === "Semua" ? "Laporan PnL" : `Laporan ${selectedInvestor}`, groupedTransactions);
+      generateSheet(selectedInvestor === "Semua" ? "Laporan PnL" : `Laporan ${selectedInvestor}`, groupedItems);
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
