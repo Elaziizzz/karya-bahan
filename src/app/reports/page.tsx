@@ -108,6 +108,15 @@ export default function ReportsPage() {
   }
 
   // Filtered transactions
+  const investors = useMemo(() => {
+    const list = new Set<string>();
+    allTransactions.forEach(t => {
+      const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+      if (im) list.add(im[1].trim());
+    });
+    return Array.from(list).sort();
+  }, [allTransactions]);
+
   const filteredTransactions = useMemo(() => {
     const today = new Date();
     
@@ -270,198 +279,125 @@ export default function ReportsPage() {
 
   const exportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Laporan PnL");
-
-    // Define columns
-    sheet.columns = [
-      { key: "no", width: 6 },
-      { key: "date", width: 22 },
-      { key: "type", width: 15 },
-      { key: "material", width: 30 },
-      { key: "qty", width: 12 },
-      { key: "modal", width: 20 },
-      { key: "jual", width: 20 },
-      { key: "total", width: 22 },
-      { key: "profit", width: 18 }
-    ];
-
-    // Determine filter label
+    
     let filterLabel = selectedFilter;
     if (selectedFilter === "TODAY") filterLabel = "Hari Ini";
     else if (selectedFilter === "YESTERDAY") filterLabel = "Kemarin";
     else if (selectedFilter === "THIS_MONTH") filterLabel = "Bulan Ini";
-    else if (selectedFilter === "CUSTOM_DATE") filterLabel = customDate ? format(new Date(customDate), "dd MMMM yyyy") : "Tanggal Spesifik";
-    else if (selectedFilter === "CUSTOM_MONTH") filterLabel = customMonth ? format(new Date(customMonth + "-01"), "MMMM yyyy") : "Bulan Spesifik";
-    else if (selectedFilter === "ALL") filterLabel = "Semua Waktu";
+    else if (selectedFilter === "CUSTOM_DATE") filterLabel = customDate;
+    else if (selectedFilter === "CUSTOM_MONTH") filterLabel = customMonth;
 
-    const printDate = format(new Date(), "dd MMM yyyy, HH:mm");
+    const generateSheet = (sheetName: string, transactionsGrouped: Transaction[][]) => {
+      const sheet = workbook.addWorksheet(sheetName.substring(0, 31).replace(/[\\/*?:\[\]]/g, ''));
+      sheet.columns = [
+        { key: "no", width: 6 },
+        { key: "date", width: 22 },
+        { key: "type", width: 15 },
+        { key: "material", width: 30 },
+        { key: "qty", width: 12 },
+        { key: "modal", width: 20 },
+        { key: "jual", width: 20 },
+        { key: "total", width: 22 },
+        { key: "profit", width: 18 }
+      ];
 
-    // Row 1: Title Row
-    const titleRow = sheet.addRow(["LAPORAN KEUANGAN - KARYA BAHAN"]);
-    sheet.mergeCells(1, 1, 1, 9);
-    titleRow.height = 30;
-    const titleCell = titleRow.getCell(1);
-    titleCell.font = { bold: true, size: 16 };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      const headerRow = sheet.addRow({
+        no: "NO", date: "TANGGAL", type: "TIPE", material: "NAMA BARANG", qty: "QTY", modal: "HARGA MODAL", jual: "HARGA JUAL", total: "TOTAL TRANSAKSI", profit: "PROFIT/RUGI"
+      });
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF000000" } };
+      headerRow.alignment = { horizontal: "center", vertical: "middle" };
 
-    // Row 2: Subtitle Row
-    const subtitleRow = sheet.addRow([`Periode: ${filterLabel}  |  Dicetak pada: ${printDate}`]);
-    sheet.mergeCells(2, 1, 2, 9);
-    subtitleRow.height = 20;
-    const subtitleCell = subtitleRow.getCell(1);
-    subtitleCell.font = { size: 10, color: { argb: "FF555555" } };
-    subtitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    // Row 3: Empty row
-    sheet.addRow([]);
-
-    // Row 4: Header Row
-    const headerRow = sheet.addRow([
-      "No",
-      "Tanggal",
-      "Tipe",
-      "Material",
-      "Quantity",
-      "H. Modal/Pcs (Rp)",
-      "H. Jual/Pcs (Rp)",
-      "Total Transaksi (Rp)",
-      "Profit (Rp)"
-    ]);
-    headerRow.height = 24;
-    headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: "FF000000" } };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
-      };
-    });
-
-    // Freeze panes up to header row
-    sheet.views = [{ state: 'frozen', ySplit: 4 }];
-
-    
-    
-    groupedTransactions.forEach((g, index) => {
-      const isOut = g.type === 'OUT';
-      const profit = isOut ? (g.total_price - g.cost_price) : 0;
-      const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim() || 'Barang'}`).join(', ');
+      let totalRevenue = 0;
+      let totalExpense = 0;
+      let totalNetProfit = 0;
       
-      const row = sheet.addRow({
-        no: index + 1,
-        date: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
-        type: isOut ? 'NOTA (OUT)' : 'NOTA (IN)',
-        material: materialText,
-        qty: g.quantity,
-        modal: g.cost_price,
-        jual: g.total_price,
-        total: isOut ? g.total_price : -g.total_price,
-        profit: profit
+      transactionsGrouped.forEach((group, idx) => {
+        const timeStr = format(new Date(group[0].created_at), "dd MMM yyyy HH:mm");
+        const typeStr = group[0].type === "IN" ? "Restock Masuk" : "Kasir Keluar";
+        let notaTotal = 0;
+        let notaProfit = 0;
+
+        group.forEach((item, itemIdx) => {
+          const isOut = item.type === "OUT";
+          const itemTotal = item.total_price || 0;
+          const itemModal = item.cost_price * item.quantity;
+          const profit = isOut ? (itemTotal - itemModal) : 0;
+          
+          if (isOut) {
+            totalRevenue += itemTotal;
+            totalNetProfit += profit;
+          } else {
+            totalExpense += itemTotal;
+          }
+          
+          notaTotal += itemTotal;
+          notaProfit += profit;
+
+          const row = sheet.addRow({
+            no: itemIdx === 0 ? (idx + 1) : "",
+            date: itemIdx === 0 ? timeStr : "",
+            type: itemIdx === 0 ? typeStr : "",
+            material: item.materials?.name || "-",
+            qty: item.quantity,
+            modal: item.cost_price,
+            jual: isOut ? (itemTotal / item.quantity) : "-",
+            total: itemTotal,
+            profit: isOut ? profit : "-"
+          });
+
+          row.getCell(6).numFmt = '"Rp" #,##0';
+          if(isOut) row.getCell(7).numFmt = '"Rp" #,##0';
+          row.getCell(8).numFmt = '"Rp" #,##0';
+          if(isOut) row.getCell(9).numFmt = '"Rp" #,##0';
+        });
+
+        const subRow = sheet.addRow({
+           no: "", date: "", type: "", material: "SUBTOTAL NOTA:", qty: "", modal: "", jual: "", total: notaTotal, profit: group[0].type === "OUT" ? notaProfit : "-"
+        });
+        subRow.font = { bold: true };
+        subRow.getCell(8).numFmt = '"Rp" #,##0';
+        if(group[0].type === "OUT") subRow.getCell(9).numFmt = '"Rp" #,##0';
+        
+        sheet.addRow({});
       });
 
-      // Alignments: dates left-aligned, numbers right-aligned, text left-aligned dates left-aligned, numbers right-aligned, text left-aligned
-      row.getCell("no").alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell("date").alignment = { vertical: 'middle', horizontal: 'left' };
-      row.getCell("type").alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell("material").alignment = { vertical: 'middle', horizontal: 'left' };
-      row.getCell("qty").alignment = { vertical: 'middle', horizontal: 'right' };
-      row.getCell("modal").alignment = { vertical: 'middle', horizontal: 'right' };
-      row.getCell("jual").alignment = { vertical: 'middle', horizontal: 'right' };
-      row.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
-      row.getCell("profit").alignment = { vertical: 'middle', horizontal: 'right' };
-
-      // Styling based on type
-      row.getCell("type").font = { color: { argb: !isOut ? "FF990000" : "FF006600" }, bold: true };
+      sheet.addRow({});
+      const gr = sheet.addRow({ material: "GRAND TOTAL", total: "Total Penjualan", profit: totalRevenue });
+      gr.font = { bold: true };
+      gr.getCell(9).numFmt = '"Rp" #,##0';
       
-      // Values formatting
-      row.getCell("total").font = { color: { argb: !isOut ? "FFCC0000" : "FF0000FF" }, bold: true };
-      if (isOut) row.getCell("profit").font = { color: { argb: "FF009900" }, bold: true };
+      const ge = sheet.addRow({ total: "Total Pembelian", profit: totalExpense });
+      ge.font = { bold: true };
+      ge.getCell(9).numFmt = '"Rp" #,##0';
 
-      // Number formatting for currency and quantity columns
-      row.getCell("qty").numFmt = '#,##0';
-      ['modal', 'jual', 'total', 'profit'].forEach(key => {
-        const cell = row.getCell(key);
-        if (typeof cell.value === 'number') {
-          cell.numFmt = '#,##0';
+      const gp = sheet.addRow({ total: "NET PROFIT", profit: totalNetProfit });
+      gp.font = { bold: true };
+      gp.getCell(9).numFmt = '"Rp" #,##0';
+      if (totalNetProfit > 0) gp.getCell(9).font = { bold: true, color: { argb: "FF00B050" } };
+      else if (totalNetProfit < 0) gp.getCell(9).font = { bold: true, color: { argb: "FFFF0000" } };
+    };
+
+    if (selectedInvestor === "Semua" && investors.length > 0) {
+      generateSheet("Semua Transaksi", filteredTransactions);
+      investors.forEach(inv => {
+        const invTxs = filteredTransactions.map(group => {
+           return group.filter(t => {
+             const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+             return im && im[1].trim() === inv;
+           });
+        }).filter(group => group.length > 0);
+        
+        if (invTxs.length > 0) {
+           generateSheet(`Laporan ${inv}`, invTxs);
         }
       });
+    } else {
+      generateSheet(selectedInvestor === "Semua" ? "Laporan PnL" : `Laporan ${selectedInvestor}`, filteredTransactions);
+    }
 
-      // Borders on all cells and alternating row background color
-      for (let col = 1; col <= 9; col++) {
-        const cell = row.getCell(col);
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-        if (index % 2 === 1) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: "FFF5F5F5" }
-          };
-        }
-      }
-    });
-
-    // Add empty row for spacing
-    sheet.addRow({});
-
-    // Totals Section
-    const totalSalesRow = sheet.addRow({ material: "TOTAL PENJUALAN", total: totalSalesRevenue });
-    const modalKeluarRow = sheet.addRow({ material: "MODAL KELUAR", total: -costRecovered });
-    const profitRow = sheet.addRow({ material: "PROFIT BERSIH", profit: realizedProfit });
-    const totalBeliRow = sheet.addRow({ material: "TOTAL PEMBELIAN", total: -totalPurchaseCost });
-
-    const summaryRows = [totalSalesRow, modalKeluarRow, profitRow, totalBeliRow];
-
-    summaryRows.forEach((row, index) => {
-      // Gray background and borders for summary rows (thick top border on the first summary row)
-      for (let col = 1; col <= 9; col++) {
-        const cell = row.getCell(col);
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: "FFF0F0F0" }
-        };
-        cell.border = {
-          top: { style: index === 0 ? 'thick' : 'thin' },
-          bottom: { style: 'thin' },
-          left: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-      }
-
-      // Merge label across material + qty columns (col 4 and 5)
-      sheet.mergeCells(row.number, 4, row.number, 5);
-      const labelCell = row.getCell("material");
-      labelCell.font = { bold: true };
-      labelCell.alignment = { vertical: 'middle', horizontal: 'right' };
-    });
-
-    totalSalesRow.getCell("total").font = { bold: true, color: { argb: "FF0000FF" } };
-    totalSalesRow.getCell("total").numFmt = '#,##0';
-    totalSalesRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
-
-    modalKeluarRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
-    modalKeluarRow.getCell("total").numFmt = '#,##0';
-    modalKeluarRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
-
-    profitRow.getCell("profit").font = { bold: true, color: { argb: "FF009900" } };
-    profitRow.getCell("profit").numFmt = '#,##0';
-    profitRow.getCell("profit").alignment = { vertical: 'middle', horizontal: 'right' };
-
-    totalBeliRow.getCell("total").font = { bold: true, color: { argb: "FFCC0000" } };
-    totalBeliRow.getCell("total").numFmt = '#,##0';
-    totalBeliRow.getCell("total").alignment = { vertical: 'middle', horizontal: 'right' };
-
-    // Generate and save
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `Laporan_PnL_${activeStore}_${selectedFilter.replace(' ', '_')}.xlsx`);
+    saveAs(new Blob([buffer]), `Laporan_PnL_${activeStore}_${filterLabel.replace(/\s/g, '_')}.xlsx`);
   };
 
   return (
@@ -498,23 +434,42 @@ export default function ReportsPage() {
       <div className="bg-gray-100 p-4 border border-black flex flex-wrap items-center gap-4 transition-swiss hover:shadow-sm">
         <Calendar className="w-6 h-6 text-gray-500" />
         <div>
-          <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih e-Statement (Periode)</label>
-          <select 
-            value={selectedFilter}
-            onChange={(e) => {
-              setSelectedFilter(e.target.value);
-              if (e.target.value === "CUSTOM_DATE" && !customDate) setCustomDate(format(new Date(), "yyyy-MM-dd"));
-              if (e.target.value === "CUSTOM_MONTH" && !customMonth) setCustomMonth(format(new Date(), "yyyy-MM"));
-            }}
-            className="bg-white border border-black px-3 py-2 text-sm font-bold w-64 focus-ring cursor-pointer transition-swiss"
-          >
-            <option value="TODAY">Hari Ini</option>
-            <option value="YESTERDAY">Kemarin</option>
-            <option value="THIS_MONTH">Bulan Ini</option>
-            <option value="CUSTOM_DATE">Tanggal Spesifik (Harian)</option>
-            <option value="CUSTOM_MONTH">Bulan Spesifik (Bulanan)</option>
-            <option value="ALL">Semua Waktu (All Time)</option>
-          </select>
+          <div className="flex flex-wrap gap-6">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih e-Statement (Periode)</label>
+                <select 
+                  value={selectedFilter}
+                  onChange={(e) => {
+                    setSelectedFilter(e.target.value);
+                    if (e.target.value === "CUSTOM_DATE" && !customDate) setCustomDate(format(new Date(), "yyyy-MM-dd"));
+                    if (e.target.value === "CUSTOM_MONTH" && !customMonth) setCustomMonth(format(new Date(), "yyyy-MM"));
+                  }}
+                  className="bg-transparent font-bold text-lg border-b-2 border-black focus:outline-none focus:border-blue-600 pb-1 cursor-pointer transition-swiss"
+                >
+                  <option value="TODAY">Hari Ini</option>
+                  <option value="YESTERDAY">Kemarin</option>
+                  <option value="THIS_MONTH">Bulan Ini</option>
+                  <option value="CUSTOM_DATE">Tanggal Spesifik...</option>
+                  <option value="CUSTOM_MONTH">Bulan Spesifik...</option>
+                </select>
+              </div>
+              
+              {investors.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Investor</label>
+                  <select 
+                    value={selectedInvestor}
+                    onChange={(e) => setSelectedInvestor(e.target.value)}
+                    className="bg-transparent font-bold text-lg border-b-2 border-black focus:outline-none focus:border-blue-600 pb-1 cursor-pointer transition-swiss"
+                  >
+                    <option value="Semua">Semua Investor</option>
+                    {investors.map(inv => (
+                      <option key={inv} value={inv}>{inv}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
         </div>
         {selectedFilter === "CUSTOM_DATE" && (
           <div className="animate-fade-in">

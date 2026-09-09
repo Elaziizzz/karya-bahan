@@ -171,7 +171,7 @@ export default function POSDashboard() {
       let display_unit = 'Pcs';
       let pack_multiplier = 1;
       
-      const packMatch = mat.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+      const packMatch = mat.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
       if (packMatch) {
          const packName = packMatch[1].trim();
          const packMult = Number(packMatch[2]);
@@ -183,7 +183,7 @@ export default function POSDashboard() {
            display_unit = packMatch[3].trim();
          }
       } else {
-         const baseMatch = mat.name.match(/-\s*\[([^=\]]+?)\]$/);
+         const baseMatch = mat.name.match(/-\s*\[([^=\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
          if (baseMatch) {
            display_unit = baseMatch[1].trim();
          }
@@ -251,14 +251,14 @@ export default function POSDashboard() {
     let displayPrice = selectedMaterial.price;
     let isGrosirMode = buyMode === 'grosir';
 
-    const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+    const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
     if (baseMatch) {
       baseUnit = baseMatch[1].trim();
       displayUnit = baseUnit;
     }
 
     if (isGrosirMode) {
-      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
       if (match) {
         displayUnit = match[1].trim();
         multiplier = Number(match[2]);
@@ -272,7 +272,7 @@ export default function POSDashboard() {
         isGrosirMode = false;
       }
     } else {
-      const packMatch = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+      const packMatch = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
       if (packMatch) {
         baseUnit = packMatch[3].trim();
         displayUnit = baseUnit;
@@ -652,13 +652,13 @@ export default function POSDashboard() {
                     let packName = '';
                     let baseUnit = 'Pcs';
                     if (selectedMaterial) {
-                      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+                      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
                       if (match) {
                         isPack = true;
                         packName = match[1].trim();
                         baseUnit = match[3].trim();
                       } else {
-                        const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+                        const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
                         if (baseMatch) baseUnit = baseMatch[1].trim();
                       }
                     }

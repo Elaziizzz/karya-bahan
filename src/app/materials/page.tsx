@@ -49,39 +49,46 @@ export default function MaterialsPage() {
 
   function openAddModal() {
     setEditingId(null);
-    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
+    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', investor: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
     setIsModalOpen(true);
   }
 
   function openEditModal(item: Material) {
-    setEditingId(item.id);
-    let baseUnit = 'Pcs';
-    let hasPack = false;
-    let packName = 'Pack';
-    let packMultiplier = '';
-    let packSalePrice = '';
-    const cleanName = item.name.replace(/\s*-\s*\[(.*?)\]$/, '');
-    const unitMatch = item.name.match(/\s*-\s*\[(.*?)\]$/);
-    if (unitMatch) {
-      const info = unitMatch[1];
-      const packMatch = info.match(/1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?$/);
-      if (packMatch) {
-        hasPack = true;
-        packName = packMatch[1].trim();
-        packMultiplier = packMatch[2];
-        baseUnit = packMatch[3].trim();
-        if (packMatch[4]) packSalePrice = packMatch[4];
-      } else {
-        baseUnit = info.trim();
+      setEditingId(item.id);
+      let baseUnit = 'Pcs';
+      let hasPack = false;
+      let packName = 'Pack';
+      let packMultiplier = '';
+      let packSalePrice = '';
+      let investor = '';
+      
+      const cleanName = item.name.replace(/\s*-\s*\[(.*?)\](?:\s*=\s*\((.*?)\))?$/, '');
+      const investorMatch = item.name.match(/\s*=\s*\((.*?)\)$/);
+      if (investorMatch) investor = investorMatch[1].trim();
+
+      const unitMatch = item.name.match(/\s*-\s*\[(.*?)\]/);
+      if (unitMatch) {
+        const info = unitMatch[1];
+        const packMatch = info.match(/1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?$/);
+        if (packMatch) {
+          hasPack = true;
+          packName = packMatch[1].trim();
+          packMultiplier = packMatch[2];
+          baseUnit = packMatch[3].trim();
+          if (packMatch[4]) packSalePrice = packMatch[4];
+        } else {
+          baseUnit = info.trim();
+        }
       }
+
+      setFormData({
+        baseUnit, hasPack, packName, packMultiplier, packSalePrice, buyQty: '', packCost: '',
+        name: cleanName, unit_info: '', code: item.code || '',
+        cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock),
+        investor
+      });
+      setIsModalOpen(true);
     }
-    setFormData({
-      baseUnit, hasPack, packName, packMultiplier, packSalePrice, buyQty: '', packCost: '',
-      name: cleanName, unit_info: '', code: item.code || '',
-      cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock)
-    });
-    setIsModalOpen(true);
-  }
 
   // Smart Import States
   const [showImportSection, setShowImportSection] = useState(false);
@@ -394,7 +401,19 @@ export default function MaterialsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 items-start">
-                  {/* Satuan & Kemasan */}
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold mb-1 uppercase">Investor / Pemilik Barang (Opsional)</label>
+                      <input type="text" list="investor-list" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.investor} onChange={(e) => setFormData({...formData, investor: e.target.value.toUpperCase()})} placeholder="Ketik atau pilih investor..." />
+                      <datalist id="investor-list">
+                        {Array.from(new Set(materials.map(m => {
+                          const im = m.name.match(/\s*=\s*\((.*?)\)$/);
+                          return im ? im[1].trim() : null;
+                        }).filter(Boolean))).map(inv => (
+                          <option key={inv} value={inv} />
+                        ))}
+                      </datalist>
+                    </div>
+                    {/* Satuan & Kemasan */}
                   <div className="bg-gray-50 border border-gray-300 p-3 h-full">
                     <label className="block text-xs font-bold mb-3 uppercase text-blue-800 border-b border-gray-200 pb-2">1. Pengaturan Satuan & Kemasan</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -509,48 +528,43 @@ export default function MaterialsPage() {
         )}
 
       
-      <div className="p-4 md:p-8 max-w-7xl mx-auto animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-end mb-8 border-b-2 border-black pb-4 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold uppercase flex items-center gap-2">
-            <Package className="w-8 h-8" />
-            MATERIALS / INVENTORY
-          </h1>
-          <p className="text-gray-500 mt-2">Manage your products, base prices, and starting stock.</p>
-        </div>
-        
-        <div className="flex flex-wrap gap-4 sticky top-0 z-40 bg-[#f4f4f4] pt-4 pb-4 border-b-2 border-black -mx-4 px-4 shadow-sm">
-          <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cari..."
-              className="border border-black p-2 pl-10 focus-ring outline-none transition-swiss w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="sticky top-0 z-40 bg-[#f8f9fa] border-b-2 border-black shadow-sm px-4 md:px-8 py-4 mb-4">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4">
+            <div>
+              <h1 className="text-3xl font-bold uppercase flex items-center gap-2">
+                <Package className="w-8 h-8" />
+                MATERIALS / INVENTORY
+              </h1>
+              <p className="text-gray-500 mt-2">Manage your products, base prices, and starting stock.</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-4">
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  className="w-full sm:w-64 border border-black p-2 pl-10 focus-ring transition-swiss"
+                  placeholder="Cari..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={() => setShowImportSection(!showImportSection)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-black border border-black font-bold uppercase hover:bg-gray-300 transition-swiss hover-elevate active-press"
+              >
+                <Zap className="w-4 h-4 text-blue-600" /> AI IMPORT
+              </button>
+              <button 
+                onClick={openAddModal}
+                className="flex items-center gap-2 px-4 py-2 bg-black text-white font-bold uppercase hover:bg-gray-800 transition-swiss hover-elevate active-press"
+              >
+                + TAMBAH
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => {
-              setShowImportSection(prev => !prev);
-              setImportResult(null);
-              setShowPreview(false);
-            }}
-            className="border-2 border-black text-black bg-white px-6 py-2 font-bold uppercase hover:bg-gray-100 transition-swiss flex items-center justify-center gap-2 active-press flex-1 sm:flex-none"
-          >
-            <Zap className="w-4 h-4 text-blue-600" />
-            {showImportSection ? "Tutup AI" : "AI Import"}
-          </button>
-          <button
-            onClick={() => {
-              openAddModal();
-            }}
-            className="bg-black text-white px-6 py-2 font-bold uppercase hover:bg-gray-800 transition-swiss active-press hover-elevate flex-1 sm:flex-none justify-center"
-          >
-            + Tambah
-          </button>
         </div>
-      </div>
+        <div className="px-4 md:px-8 max-w-7xl mx-auto pb-32 animate-fade-in">
 
       {/* --- SMART IMPORT SECTION --- */}
       {showImportSection && (
@@ -754,7 +768,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 text-right font-mono text-gray-600">
                     {(() => {
                       let display = item.cost_price.toLocaleString("id-ID");
-                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
                       if (match) {
                          const multiplier = Number(match[2]);
                          const packCost = item.cost_price * multiplier;
@@ -766,7 +780,7 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 text-right font-mono font-bold text-green-700">
                     {(() => {
                       let display = item.price.toLocaleString("id-ID");
-                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\]$/);
+                      const match = item.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
                       if (match) {
                          const multiplier = Number(match[2]);
                          let packPrice = item.price * multiplier;

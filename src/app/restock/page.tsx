@@ -151,7 +151,7 @@ export default function RestockPage() {
 
     let multiplier = 1;
     if (selectedMaterial && buyMode === 'grosir') {
-      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+      const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
       if (match) multiplier = Number(match[2]);
     }
 
@@ -301,13 +301,13 @@ export default function RestockPage() {
                   let packName = '';
                   let baseUnit = 'Pcs';
                   if (selectedMaterial) {
-                    const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\]$/);
+                    const match = selectedMaterial.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
                     if (match) {
                       isPack = true;
                       packName = match[1].trim();
                       baseUnit = match[3].trim();
                     } else {
-                      const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\]$/);
+                      const baseMatch = selectedMaterial.name.match(/-\s*\[([^=\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
                       if (baseMatch) baseUnit = baseMatch[1].trim();
                     }
                   }
