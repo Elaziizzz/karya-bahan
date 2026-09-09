@@ -625,20 +625,7 @@ export default function POSDashboard() {
                   </div>
                 </div>
                 
-                {receiptData.paymentStatus === 'DP' && (
-                  <div className="mt-6 border-2 border-black p-3 w-72 float-right text-xs">
-                    <p className="font-bold border-b border-black pb-1 mb-2">STATUS PELUNASAN DP:</p>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-4 h-4 border border-black"></div>
-                      <span>BELUM LUNAS</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-4 h-4 border border-black"></div>
-                      <span>LUNAS (Tgl: ..................)</span>
-                    </div>
-                    <p className="mt-3 text-[9px] italic">*Bawa nota ini saat pelunasan</p>
-                  </div>
-                )}
+                
                 <div className="clear-both"></div>
 
               <div className="text-center text-[10px] mt-8 pt-4 border-t border-dashed border-gray-300 print:hidden text-gray-500">
