@@ -410,7 +410,7 @@ export default function MaterialsPage() {
                           const im = m.name.match(/\s*=\s*\((.*?)\)$/);
                           return im ? im[1].trim() : null;
                         }).filter(Boolean))).map(inv => (
-                          <option key={inv} value={inv} />
+                          <option key={inv as string} value={inv as string} />
                         ))}
                       </datalist>
                     </div>
