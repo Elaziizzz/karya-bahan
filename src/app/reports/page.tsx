@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { FileText, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank, Wallet, ArrowDownRight, ArrowUpRight, X } from "lucide-react";
+import { FileText, Clock, Download, Calendar, Trash2, TrendingUp, DollarSign, Package, PiggyBank, Wallet, ArrowDownRight, ArrowUpRight, X } from "lucide-react";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -22,6 +22,10 @@ type Transaction = {
   created_at: string;
   deleted_at: string | null;
   store: string;
+  payment_status?: string;
+  dp_amount?: number;
+  customer_name?: string;
+  customer_phone?: string;
   materials?: { name: string; code?: string; };
 };
 
@@ -200,6 +204,26 @@ export default function ReportsPage() {
 
   const netBalance = totalSalesRevenue - totalPurchaseCost;
   const currentBudget = initialBudget + netBalance;
+
+  // Total Piutang (Customer Debt yet to be paid)
+  const totalPiutang = useMemo(() => {
+    const groups: Record<string, { total: number; dp: number; status?: string }> = {};
+    outTransactions.forEach((t: any) => {
+      const key = t.created_at;
+      if (!groups[key]) {
+        groups[key] = {
+          total: 0,
+          dp: Number(t.dp_amount) || 0,
+          status: t.payment_status
+        };
+      }
+      groups[key].total += Number(t.total_price || 0);
+    });
+
+    return Object.values(groups)
+      .filter(g => g.status === 'DP')
+      .reduce((sum, g) => sum + Math.max(0, g.total - g.dp), 0);
+  }, [outTransactions]);
 
 
 
@@ -544,7 +568,17 @@ export default function ReportsPage() {
           <Wallet className="w-6 h-6" />
           FINANCIAL SUMMARY
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="border-2 border-black p-5 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
+            <div className="text-xs font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
+              <Clock className="w-4 h-4 text-amber-600" />
+              Sisa Piutang (Hutang Customer)
+            </div>
+            <div className="text-2xl font-mono font-bold text-amber-700">
+              Rp <AnimatedNumber value={totalPiutang} />
+            </div>
+            <div className="text-[10px] text-gray-400 mt-1 uppercase">Total tagihan DP yang belum dilunasi</div>
+          </div>
           <div className="border-2 border-black p-6 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
             <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
               <ArrowUpRight className="w-4 h-4 text-green-600" />

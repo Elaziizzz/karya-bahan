@@ -576,7 +576,7 @@ export default function POSDashboard() {
             notaItemsText,
             '1 Nota',
             grandTotal,
-            '? VALID',
+            isDp ? 'BELUM LUNAS' : 'VALID',
             customerName.trim() || '-',
             customerPhone.trim() || '-',
             isDp ? "DP" : "LUNAS",
@@ -1023,21 +1023,21 @@ export default function POSDashboard() {
                       onClick={() => setPaymentMode('LUNAS')}
                       className={`p-3 font-bold text-xs uppercase border-2 border-black rounded transition-all shadow-[2px_2px_0_0_#000] flex items-center justify-center gap-1 ${paymentMode === 'LUNAS' ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-200'}`}
                     >
-                      <span>? LUNAS</span>
+                      <span>BAYAR LUNAS</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPaymentMode('DP')}
                       className={`p-3 font-bold text-xs uppercase border-2 border-black rounded transition-all shadow-[2px_2px_0_0_#000] flex items-center justify-center gap-1 ${paymentMode === 'DP' ? 'bg-amber-400 text-black border-black' : 'bg-white text-black hover:bg-gray-200'}`}
                     >
-                      <span>? DP / NYICIL</span>
+                      <span>BAYAR DP / NYICIL</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPaymentMode('PELUNASAN')}
                       className={`p-3 font-bold text-xs uppercase border-2 border-black rounded transition-all shadow-[2px_2px_0_0_#000] flex items-center justify-center gap-1 relative ${paymentMode === 'PELUNASAN' ? 'bg-green-600 text-white border-black' : 'bg-white text-black hover:bg-gray-200'}`}
                     >
-                      <span>?? PELUNASAN</span>
+                      <span>PELUNASAN</span>
                       {unpaidDebts.length > 0 && (
                         <span className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 animate-pulse">
                           {unpaidDebts.length}
@@ -1056,7 +1056,7 @@ export default function POSDashboard() {
                       </label>
                       {unpaidDebts.length === 0 ? (
                         <div className="p-4 bg-green-50 border-2 border-green-600 text-green-900 rounded font-bold text-center text-sm">
-                          ?? Semua tagihan hutang sudah lunas! Tidak ada customer yang punya sisa hutang saat ini.
+                          Semua tagihan hutang sudah lunas! Tidak ada customer yang punya sisa hutang saat ini.
                         </div>
                       ) : (
                         <select
@@ -1067,10 +1067,10 @@ export default function POSDashboard() {
                           }}
                           className="w-full p-3 border-2 border-black bg-white font-bold text-sm focus:outline-none focus:ring-4 focus:ring-green-300"
                         >
-                          <option value="">-- PILIH NAMA CUSTOMER (${unpaidDebts.length} BELUM LUNAS) --</option>
+                          <option value="">-- PILIH NAMA CUSTOMER ({unpaidDebts.length} BELUM LUNAS) --</option>
                           {unpaidDebts.map((d) => (
                             <option key={d.timeKey} value={d.timeKey}>
-                              ?? ${d.customer_name} | Sisa Hutang: Rp ${d.remainingDebt.toLocaleString('id-ID')} (${format(new Date(d.created_at), 'dd/MM/yyyy HH:mm')})
+                              {d.customer_name} | Sisa Hutang: Rp {d.remainingDebt.toLocaleString('id-ID')} ({format(new Date(d.created_at), 'dd/MM/yyyy HH:mm')})
                             </option>
                           ))}
                         </select>
@@ -1082,39 +1082,35 @@ export default function POSDashboard() {
                         <div className="flex justify-between items-start border-b border-gray-300 pb-2">
                           <div>
                             <span className="text-xs text-gray-500 font-bold uppercase">Nama Customer:</span>
-                            <div className="text-lg font-black text-black">?? ${selectedDebt.customer_name}</div>
+                            <div className="text-lg font-black text-black">{selectedDebt.customer_name}</div>
                             {selectedDebt.customer_phone !== '-' && (
-                              <div className="text-xs text-gray-600 font-mono">Telp: ${selectedDebt.customer_phone}</div>
+                              <div className="text-xs text-gray-600 font-mono">Telp: {selectedDebt.customer_phone}</div>
                             )}
                           </div>
                           <div className="text-right">
                             <span className="text-xs text-gray-500 font-bold uppercase">Waktu Nota:</span>
-                            <div className="text-xs font-mono font-bold text-gray-700">
-                              ${format(new Date(selectedDebt.created_at), 'dd MMM yyyy HH:mm')}
-                            </div>
+                            <div className="text-xs font-mono font-bold text-gray-700">{format(new Date(selectedDebt.created_at), "dd MMM yyyy HH:mm")}</div>
                           </div>
                         </div>
 
                         <div className="text-xs text-gray-600 bg-gray-50 p-2 border border-gray-200">
                           <span className="font-bold">Barang di Nota: </span>
-                          ${selectedDebt.items.map(i => `${i.quantity}x ${displayMaterialName(i.materials?.name)}`).join(', ')}
+                          {selectedDebt.items.map(i => `${i.quantity}x ${displayMaterialName(i.materials?.name)}`).join(", ")}
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-xs border-b border-gray-300 pb-2">
                           <div>
-                            <span className="text-gray-500">Total Belanja:</span>
-                            <div className="font-bold font-mono text-sm">Rp ${selectedDebt.totalAmount.toLocaleString('id-ID')}</div>
+                            <span className="text-gray-500">Total Belanja:</span><div className="font-bold font-mono text-sm">Rp {selectedDebt.totalAmount.toLocaleString("id-ID")}</div>
                           </div>
                           <div>
-                            <span className="text-gray-500">Sudah Dibayar (DP):</span>
-                            <div className="font-bold font-mono text-sm text-blue-700">Rp ${selectedDebt.dpAmount.toLocaleString('id-ID')}</div>
+                            <span className="text-gray-500">Sudah Dibayar (DP):</span><div className="font-bold font-mono text-sm text-blue-700">Rp {selectedDebt.dpAmount.toLocaleString("id-ID")}</div>
                           </div>
                         </div>
 
                         <div className="bg-red-50 border border-red-300 p-3 rounded flex justify-between items-center">
                           <span className="font-bold text-xs uppercase text-red-700">SISA HUTANG SAAT INI:</span>
                           <span className="font-mono text-2xl font-black text-red-600">
-                            Rp ${selectedDebt.remainingDebt.toLocaleString('id-ID')}
+                            Rp {selectedDebt.remainingDebt.toLocaleString("id-ID")}
                           </span>
                         </div>
 
@@ -1128,7 +1124,7 @@ export default function POSDashboard() {
                               onClick={() => setPelunasanAmount(String(selectedDebt.remainingDebt))}
                               className="text-xs bg-green-700 hover:bg-green-800 text-white px-2.5 py-1 font-bold rounded shadow-sm transition-colors"
                             >
-                              ? LUNAS SEMUA (Rp ${selectedDebt.remainingDebt.toLocaleString('id-ID')})
+                              LUNASI SEMUA (Rp {selectedDebt.remainingDebt.toLocaleString("id-ID")})
                             </button>
                           </div>
                           <input
@@ -1148,18 +1144,18 @@ export default function POSDashboard() {
                             placeholder="Ketik nominal uang..."
                           />
                           <p className="text-[11px] text-gray-500 mt-1">
-                            *Nominal tidak bisa melebihi sisa hutang (Maksimal: Rp ${selectedDebt.remainingDebt.toLocaleString('id-ID')})
+                            *Nominal tidak bisa melebihi sisa hutang (Maksimal: Rp {selectedDebt.remainingDebt.toLocaleString("id-ID")})
                           </p>
 
                           {Number(pelunasanAmount) === selectedDebt.remainingDebt && (
                             <div className="mt-2 text-xs bg-green-100 border border-green-500 text-green-800 p-2 font-bold rounded text-center">
-                              ? Akan LUNAS PENUH! Nama customer ini akan otomatis hilang dari daftar hutang setelah diproses.
+                              Akan LUNAS PENUH! Nama customer ini akan otomatis hilang dari daftar hutang setelah diproses.
                             </div>
                           )}
 
                           {Number(pelunasanAmount) > 0 && Number(pelunasanAmount) < selectedDebt.remainingDebt && (
                             <div className="mt-2 text-xs bg-amber-100 border border-amber-500 text-amber-900 p-2 font-bold rounded text-center">
-                              ? Pembayaran cicilan sebesar Rp ${Number(pelunasanAmount).toLocaleString('id-ID')}. Sisa hutang berikutnya menjadi: Rp ${(selectedDebt.remainingDebt - Number(pelunasanAmount)).toLocaleString('id-ID')}.
+                              Pembayaran cicilan sebesar Rp {Number(pelunasanAmount).toLocaleString("id-ID")}. Sisa hutang berikutnya menjadi: Rp {(selectedDebt.remainingDebt - Number(pelunasanAmount)).toLocaleString("id-ID")}.
                             </div>
                           )}
                         </div>
@@ -1214,7 +1210,7 @@ export default function POSDashboard() {
                           />
                           {Number(dpAmount) > 0 && cartTotal > 0 && (
                             <div className="text-xs text-red-600 font-bold mt-1">
-                              Sisa Hutang Yang Belum Dibayar: Rp ${Math.max(0, cartTotal - Number(dpAmount)).toLocaleString('id-ID')}
+                              Sisa Hutang Yang Belum Dibayar: Rp {Math.max(0, cartTotal - Number(dpAmount)).toLocaleString("id-ID")}
                             </div>
                           )}
                         </div>

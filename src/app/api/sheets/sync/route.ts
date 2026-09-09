@@ -43,10 +43,10 @@ async function ensureSheetExists(year: string, sheets: any) {
     // Write Headers
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${year}!A1:I1`,
+      range: `${year}!A1:N1`,
       valueInputOption: 'RAW',
       requestBody: {
-        values: [['ID Transaksi', 'Tanggal', 'Waktu', 'Toko', 'Tipe', 'Nama Barang', 'Qty', 'Total Harga', 'Status']],
+        values: [['ID Transaksi', 'Tanggal', 'Waktu', 'Toko', 'Tipe', 'Nama Barang', 'Qty', 'Total Harga', 'Status', 'Nama Customer', 'No Telp', 'Status Pembayaran', 'DP Dibayar', 'Sisa Kurang']],
       },
     });
   }
@@ -115,6 +115,15 @@ export async function POST(req: Request) {
       
       const rowIndex = rows.findIndex((row: any) => row[0] === payload.invoiceNo);
       if (rowIndex !== -1) {
+        const isFullLunas = payload.status === 'LUNAS';
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${year}!I${rowIndex + 1}`,
+          valueInputOption: 'RAW',
+          requestBody: {
+            values: [[isFullLunas ? 'VALID' : 'BELUM LUNAS']],
+          },
+        });
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${year}!L${rowIndex + 1}:N${rowIndex + 1}`,
