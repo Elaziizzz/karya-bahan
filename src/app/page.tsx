@@ -140,6 +140,17 @@ export default function POSDashboard() {
       .order("created_at", { ascending: false });
     if (recent) setTransactions(recent);
 
+    // Fetch ALL unpaid transactions for Pelunasan
+    const { data: unpaid } = await supabase
+      .from("transactions")
+      .select("*, materials(name, code)")
+      .eq("store", store)
+      .eq("type", "OUT")
+      .eq("payment_status", "DP")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    if (unpaid) setUnpaidTransactions(unpaid as Transaction[]);
+
     const { data: all } = await supabase
       .from("transactions")
       .select("type, total_price, created_at")
