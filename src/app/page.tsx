@@ -509,7 +509,11 @@ export default function POSDashboard() {
                   <p className="mt-4">Alamat : {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
                   <p>Telepon: {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
                   <p>Sales  : Admin</p>
-                </div>
+                    <div className="mt-2 border-t border-dashed border-black pt-2 w-48">
+                      <p>Customer: <b>{receiptData.customerName || "-"}</b></p>
+                      <p>No. Telp: {receiptData.customerPhone || "-"}</p>
+                    </div>
+                  </div>
                 <div className="text-center">
                   <div className="mb-4">Hal : 1</div>
                   <h1 className="text-xl tracking-[0.5em] mb-4">FAKTUR</h1>
@@ -565,10 +569,38 @@ export default function POSDashboard() {
                   </div>
                                     <div className="flex justify-between py-1 font-bold">
                     <span>Total     :</span>
-                    <span>{receiptData.total.toLocaleString("id-ID")}</span>
+                      <span>{receiptData.total.toLocaleString("id-ID")}</span>
+                    </div>
+                    {receiptData.paymentStatus === 'DP' && (
+                      <div className="border-t border-black border-dashed mt-1 pt-1">
+                        <div className="flex justify-between py-1 font-bold">
+                          <span>Tunai / DP :</span>
+                          <span>{receiptData.dpAmount.toLocaleString("id-ID")}</span>
+                        </div>
+                        <div className="flex justify-between py-1 font-bold text-lg mt-1">
+                          <span>SISA KURANG:</span>
+                          <span>{(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+                
+                {receiptData.paymentStatus === 'DP' && (
+                  <div className="mt-6 border-2 border-black p-3 w-72 float-right text-xs">
+                    <p className="font-bold border-b border-black pb-1 mb-2">STATUS PELUNASAN DP:</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-4 h-4 border border-black"></div>
+                      <span>BELUM LUNAS</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-4 h-4 border border-black"></div>
+                      <span>LUNAS (Tgl: ..................)</span>
+                    </div>
+                    <p className="mt-3 text-[9px] italic">*Bawa nota ini saat pelunasan</p>
+                  </div>
+                )}
+                <div className="clear-both"></div>
 
               <div className="text-center text-[10px] mt-8 pt-4 border-t border-dashed border-gray-300 print:hidden text-gray-500">
                 <p>Format Struk NCR 1/2 Folio. Setel ukuran kertas: 215mm x 140mm pada pengaturan printer (Ctrl+P).</p>
