@@ -125,7 +125,12 @@ export default function POSDashboard() {
   }
 
   async function fetchMaterials(store: string) {
-    const { data } = await supabase.from("materials").select("*").eq("store", store).order("name");
+    const { data } = await supabase
+      .from("materials")
+      .select("*")
+      .eq("store", store)
+      .is("deleted_at", null)
+      .order("name");
     if (data) setMaterials(data);
   }
 

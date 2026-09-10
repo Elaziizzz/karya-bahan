@@ -83,7 +83,8 @@ export default function ReportsPage() {
     const { data: mats } = await supabase
       .from("materials")
       .select("*")
-      .eq("store", store);
+      .eq("store", store)
+      .is("deleted_at", null);
     
     if (mats) setMaterials(mats as Material[]);
 
