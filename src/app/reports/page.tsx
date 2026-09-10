@@ -519,6 +519,7 @@ export default function ReportsPage() {
                   <option value="TODAY">Hari Ini</option>
                   <option value="YESTERDAY">Kemarin</option>
                   <option value="THIS_MONTH">Bulan Ini</option>
+                  <option value="ALL">Semua Waktu / Seluruh Waktu</option>
                   <option value="CUSTOM_DATE">Tanggal Spesifik...</option>
                   <option value="CUSTOM_MONTH">Bulan Spesifik...</option>
                 </select>
