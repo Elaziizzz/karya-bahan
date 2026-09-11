@@ -731,7 +731,7 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[11.5px] leading-tight flex flex-col justify-between h-[95mm] print:h-[95mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[11.5px] leading-tight flex flex-col justify-between min-h-[92mm] print:min-h-[92mm] print:h-auto mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1">
@@ -755,7 +755,7 @@ export default function POSDashboard() {
                     </div>
                     
                     {/* 2. Table Area (Flex-1 fills middle, 10 items max) */}
-                    <div className="flex-1 flex flex-col justify-start overflow-hidden">
+                    <div className="flex-1 flex flex-col justify-start">
                       <table className="w-full text-left border-collapse text-[11.5px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
@@ -785,15 +785,15 @@ export default function POSDashboard() {
                       </table>
                     </div>
                     
-                    {/* 3. Footer (Always Pinned at Bottom of 105mm Page, Safe with Margin: Default) */}
+                    {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
                     <div className="shrink-0 border-t border-black border-dashed pt-1 text-[11.5px]">
                       <div className="flex justify-between items-start">
                         <div className="text-center w-32">
-                          <p className="mb-3 font-medium">Tanda Terima</p>
+                          <p className="mb-2 font-medium">Tanda Terima</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
                         <div className="text-center w-32">
-                          <p className="mb-3 font-medium">Hormat Kami</p>
+                          <p className="mb-2 font-medium">Hormat Kami</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
                         <div className="w-52 text-right text-[11.5px]">

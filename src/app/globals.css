@@ -149,10 +149,10 @@ input[type=number] {
   .receipt-page {
     width: 172mm !important;
     max-width: 172mm !important;
-    height: 95mm !important;
-    max-height: 95mm !important;
+    min-height: 92mm !important;
+    max-height: 115mm !important;
+    height: auto !important;
     margin: 0 auto !important;
-    overflow: hidden !important;
     box-sizing: border-box !important;
   }
   .receipt-page-break {
