@@ -710,8 +710,8 @@ export default function POSDashboard() {
         const ITEMS_PER_PAGE = 10;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[172mm] print:mx-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-[172mm] print:mx-auto">
+          <div className="receipt-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-full print:max-w-[195mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-full print:mx-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-3 print:hidden">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-medium" title="Cetak">
@@ -830,7 +830,8 @@ export default function POSDashboard() {
                 <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK STRUK CONTINUOUS FORM (Setengah Lembar / 229 x 162 mm):</p>
                 <p>1. Ukuran Kertas di Printer: Pilih <b>Envelope C5 229 x 162 mm</b> atau <b>Letter Fanfold 8 1/2 x 11 in</b>.</p>
                 <p>2. Margin: Pilih <b>Default</b> (posisi otomatis pas di tengah, aman dari lubang kertas dan tidak mentok).</p>
-                <p>3. <b>Hilangkan centang "Header dan footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
+                <p>3. Skala (%): Pilih <b>Ukuran sebenarnya (Actual size)</b> — ukuran 110% sudah otomatis tertanam di struk!</p>
+                <p>4. <b>Hilangkan centang "Header dan footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
               </div>
             </div>
           </div>
