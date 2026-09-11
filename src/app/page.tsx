@@ -788,14 +788,14 @@ export default function POSDashboard() {
                     
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
                     <div className="shrink-0 border-t border-black border-dashed pt-1 text-[11.5px]">
-                      <div className="flex justify-between items-start">
-                        <div className="text-center w-32">
-                          <p className="mb-2 font-medium">Tanda Terima</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
+                      <div className="flex justify-between items-stretch">
+                        <div className="text-center w-32 flex flex-col justify-between self-stretch">
+                          <p className="font-medium">Tanda Terima</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none mt-auto py-0.5">(....................)</p>
                         </div>
-                        <div className="text-center w-32">
-                          <p className="mb-2 font-medium">Hormat Kami</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
+                        <div className="text-center w-32 flex flex-col justify-between self-stretch">
+                          <p className="font-medium">Hormat Kami</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none mt-auto py-0.5">(....................)</p>
                         </div>
                         <div className="w-52 text-right text-[11.5px]">
                           <div className="flex justify-between py-0.5">
