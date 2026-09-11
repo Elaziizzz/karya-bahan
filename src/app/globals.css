@@ -119,7 +119,7 @@ input[type=number] {
 @media print {
   @page {
     size: 215mm 140mm;
-    margin: 0mm;
+    margin: 8mm 10mm;
   }
   html, body {
     margin: 0 !important;
@@ -130,8 +130,8 @@ input[type=number] {
     print-color-adjust: exact !important;
   }
   .receipt-page {
-    height: 118mm !important;
-    max-height: 118mm !important;
+    height: 108mm !important;
+    max-height: 108mm !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
