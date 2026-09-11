@@ -130,8 +130,8 @@ input[type=number] {
     print-color-adjust: exact !important;
   }
   .receipt-page {
-    height: 132mm !important;
-    max-height: 132mm !important;
+    height: 118mm !important;
+    max-height: 118mm !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
