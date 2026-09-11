@@ -766,15 +766,15 @@ export default function POSDashboard() {
                 </tbody>
               </table>
               
-              {/* Signature & Totals Section - Moved down with mt-10 and spacious signature gaps */}
+              {/* Signature & Totals Section - Moved down with mt-8 and guaranteed single-line signature brackets */}
               <div className="border-t border-black border-dashed pt-4 mt-8 flex justify-between items-start text-[11px] tracking-wide">
-                <div className="text-center w-32">
+                <div className="text-center w-36">
                   <p className="mb-14 font-medium">Tanda Terima</p>
-                  <p>( ........................ )</p>
+                  <p className="whitespace-nowrap font-mono tracking-normal text-[11px]">(....................)</p>
                 </div>
-                <div className="text-center w-32">
+                <div className="text-center w-36">
                   <p className="mb-14 font-medium">Hormat Kami</p>
-                  <p>( ........................ )</p>
+                  <p className="whitespace-nowrap font-mono tracking-normal text-[11px]">(....................)</p>
                 </div>
                 <div className="w-60 text-right">
                   <div className="flex justify-between py-1">
