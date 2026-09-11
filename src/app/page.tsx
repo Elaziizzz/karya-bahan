@@ -750,6 +750,7 @@ export default function POSDashboard() {
                           <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                           <div>No. Faktur: {receiptData.invoiceNo}</div>
                           <div>Kasir     : Admin</div>
+                          <div>Status    : <b className="uppercase">{receiptData.paymentStatus === 'DP' ? 'Cicilan / DP' : 'Lunas'}</b></div>
                         </div>
                       </div>
                     </div>
@@ -805,7 +806,7 @@ export default function POSDashboard() {
                             <span>Total:</span>
                             <span className="text-[13px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                           </div>
-                          {receiptData.paymentStatus === 'DP' && (
+                          {(receiptData.paymentStatus === 'DP' || (receiptData.dpAmount && receiptData.dpAmount < receiptData.total)) && (
                             <div className="border-t border-black border-dashed mt-0.5 pt-0.5">
                               <div className="flex justify-between py-0.5 font-bold">
                                 <span>Tunai / DP:</span>
