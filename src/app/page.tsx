@@ -703,14 +703,14 @@ export default function POSDashboard() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-fade-in print:p-0 print:m-0 print:max-w-none">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-fade-in print:p-0 print:m-0 print:space-y-0 print:max-w-none">
       
       {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
       {receiptData && (() => {
-        const ITEMS_PER_PAGE = 7;
+        const ITEMS_PER_PAGE = 5;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[185mm] print:mx-auto print:overflow-visible">
+          <div className="receipt-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[185mm] print:mx-auto print:overflow-visible">
             <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-[185mm] print:mx-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-3 print:hidden">
@@ -723,7 +723,7 @@ export default function POSDashboard() {
                 </button>
               </div>
               
-              {/* Receipt Pages List (7 items max per page, 108mm height, fits 1 sheet with Default Margin) */}
+              {/* Receipt Pages List (5 items max per page, 120mm height, built-in top margin pt-4) */}
               {Array.from({ length: totalPages }).map((_, pageIdx) => {
                 const pageItems = receiptData.items.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
                 const isLastPage = pageIdx === totalPages - 1;
@@ -731,9 +731,9 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:max-w-none print:w-[185mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[11px] leading-tight flex flex-col justify-between h-[108mm] print:h-[108mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-4 print:pb-2 print:max-w-none print:w-[185mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[11px] leading-tight flex flex-col justify-between h-[120mm] print:h-[120mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
-                    {/* 1. Header (Pinned at Top) */}
+                    {/* 1. Header (Pinned at Top with Built-in Margin) */}
                     <div className="shrink-0 mb-1">
                       <div className="flex justify-between items-start mb-1 text-[11px]">
                         <div className="max-w-[85mm] leading-tight space-y-0.5">
@@ -754,7 +754,7 @@ export default function POSDashboard() {
                       </div>
                     </div>
                     
-                    {/* 2. Table Area (Flex-1 fills middle, 7 items max) */}
+                    {/* 2. Table Area (Flex-1 fills middle, 5 items max) */}
                     <div className="flex-1 flex flex-col justify-start overflow-hidden">
                       <table className="w-full text-left border-collapse text-[11px]">
                         <thead>
@@ -785,15 +785,15 @@ export default function POSDashboard() {
                       </table>
                     </div>
                     
-                    {/* 3. Footer (Always Pinned at Bottom of 108mm Page, Safe from Perforation) */}
-                    <div className="shrink-0 border-t border-black border-dashed pt-1 text-[11px]">
+                    {/* 3. Footer (Always Pinned at Bottom of 120mm Page, Safe from Perforation) */}
+                    <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[11px]">
                       <div className="flex justify-between items-start">
                         <div className="text-center w-36">
-                          <p className="mb-4 font-medium">Tanda Terima</p>
+                          <p className="mb-5 font-medium">Tanda Terima</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
                         <div className="text-center w-36">
-                          <p className="mb-4 font-medium">Hormat Kami</p>
+                          <p className="mb-5 font-medium">Hormat Kami</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
                         <div className="w-56 text-right text-[11px]">
@@ -828,7 +828,7 @@ export default function POSDashboard() {
               <div className="text-center text-[11px] mt-4 pt-2 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200 max-w-[185mm] mx-auto">
                 <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK STRUK CONTINUOUS FORM (9.5" x 11" : 2 / Setengah Lembar):</p>
                 <p>1. Ukuran Kertas di Printer: Pilih <b>Letter Fanfold 8 1/2 x 11 in</b> atau <b>Letter</b>.</p>
-                <p>2. Margin: Bisa pilih <b>"Default"</b> (posisi pas di tengah lembar kertas, tidak mepet ke atas).</p>
+                <p>2. Margin: Pilih <b>"Tidak ada" (None)</b> (jarak atas sudah otomatis diset pas di nota agar rapi).</p>
                 <p>3. <b>Hilangkan centang "Header dan footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
               </div>
             </div>

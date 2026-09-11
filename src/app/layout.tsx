@@ -18,10 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased bg-[#f8f9fa] bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:16px_16px] text-black flex flex-col md:flex-row min-h-screen animate-fade-in`}>
+      <body className={`${inter.className} antialiased bg-[#f8f9fa] bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:16px_16px] text-black flex flex-col md:flex-row min-h-screen animate-fade-in print:min-h-0 print:h-auto print:block print:bg-white`}>
         <ToastProvider>
           <Sidebar />
-          <main className="flex-1 h-screen overflow-y-auto pb-20 md:pb-0 print:overflow-visible print:h-auto print:w-full">
+          <main className="flex-1 h-screen overflow-y-auto pb-20 md:pb-0 print:overflow-visible print:h-auto print:min-h-0 print:pb-0 print:w-full">
             {children}
           </main>
         </ToastProvider>

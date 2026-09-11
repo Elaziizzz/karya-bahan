@@ -119,19 +119,35 @@ input[type=number] {
 @media print {
   @page {
     size: 215mm 140mm;
-    margin: 8mm 10mm;
+    margin: 0mm;
   }
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 215mm !important;
+    height: auto !important;
+    min-height: 0 !important;
     background: white !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+  .receipt-modal-root {
+    position: static !important;
+    width: 185mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
   .receipt-page {
-    height: 108mm !important;
-    max-height: 108mm !important;
+    height: 120mm !important;
+    max-height: 120mm !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
