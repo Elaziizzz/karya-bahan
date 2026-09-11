@@ -706,102 +706,126 @@ export default function POSDashboard() {
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12 animate-fade-in print:p-0 print:m-0 print:max-w-none">
       
       {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
-      {receiptData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:static print:bg-white print:z-auto print:block print:w-[185mm] print:mx-auto">
-          <div className="bg-white p-6 max-w-3xl w-full shadow-2xl relative print:shadow-none print:p-0 print:max-w-none print:w-[185mm] print:mx-auto">
-            <div className="absolute top-2 right-2 flex gap-2 print:hidden">
-              <button onClick={() => window.print()} className="p-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors" title="Cetak">
-                <Printer className="w-5 h-5" />
-              </button>
-              <button onClick={() => setReceiptData(null)} className="p-2 bg-gray-200 hover:bg-red-500 hover:text-white rounded transition-colors" title="Tutup">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {/* Receipt Content NCR 2-ply Style (Compact for multi-items, notranslate to prevent Chrome Translate bugs) */}
-            <div translate="no" className="notranslate text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[11px] leading-tight">
-              <div className="flex justify-between items-start mb-2 text-[11px]">
-                <div className="max-w-[85mm] leading-tight space-y-0.5">
-                  <h2 className="text-[13px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                  <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                  <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
-                  <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
-                </div>
-                <div className="text-center">
-                  <h1 className="text-lg font-bold tracking-[0.3em]">FAKTUR</h1>
-                  <div className="text-[10px]">Hal : 1</div>
-                </div>
-                <div className="text-right text-[11px] leading-tight space-y-0.5">
-                  <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
-                  <div>No. Faktur: {receiptData.invoiceNo}</div>
-                  <div>Kasir     : Admin</div>
-                </div>
+      {receiptData && (() => {
+        const ITEMS_PER_PAGE = 10;
+        const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[185mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-[185mm] print:mx-auto">
+              {/* Action Buttons (Hidden when printing) */}
+              <div className="flex justify-end gap-2 mb-3 print:hidden">
+                <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-medium" title="Cetak">
+                  <Printer className="w-5 h-5" />
+                  Cetak Struk
+                </button>
+                <button onClick={() => setReceiptData(null)} className="p-2 bg-gray-200 hover:bg-red-500 hover:text-white rounded transition-colors" title="Tutup">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               
-              <table className="w-full text-left mb-1 border-collapse text-[11px]">
-                <thead>
-                  <tr className="border-t border-b border-black border-dashed">
-                    <th className="py-1 font-bold w-8 text-center">NO.</th>
-                    <th className="py-1 font-bold">NAMA BARANG</th>
-                    <th className="py-1 font-bold text-right w-24">QTY</th>
-                    <th className="py-1 font-bold text-right w-24">HARGA</th>
-                    <th className="py-1 font-bold text-right w-28">JUMLAH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receiptData.items.map((item, idx) => (
-                    <tr key={idx} className="border-b border-gray-100 print:border-none">
-                      <td className="py-0.5 text-center align-top">{idx + 1}</td>
-                      <td className="py-0.5 align-top">
-                        {item.material.code ? `[${item.material.code}] ` : ''}
-                        {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
-                      </td>
-                      <td className="py-0.5 text-right align-top whitespace-nowrap">
-                        {item.display_quantity} {item.display_unit.toUpperCase()}
-                      </td>
-                      <td className="py-0.5 text-right align-top whitespace-nowrap">{item.display_price.toLocaleString("id-ID")}</td>
-                      <td className="py-0.5 text-right align-top font-bold whitespace-nowrap">{item.subtotal.toLocaleString("id-ID")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {/* Signature & Totals Section - Compact mt-2 and mb-8 to easily fit 1-10 items within 140mm */}
-              <div className="border-t border-black border-dashed pt-2 mt-2 flex justify-between items-start text-[11px]">
-                <div className="text-center w-36">
-                  <p className="mb-8 font-medium">Tanda Terima</p>
-                  <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
-                </div>
-                <div className="text-center w-36">
-                  <p className="mb-8 font-medium">Hormat Kami</p>
-                  <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
-                </div>
-                <div className="w-56 text-right text-[11px]">
-                  <div className="flex justify-between py-0.5">
-                    <span>Sub Total:</span>
-                    <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
-                    <span>Total:</span>
-                    <span className="text-[12px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
-                  </div>
-                  {receiptData.paymentStatus === 'DP' && (
-                    <div className="border-t border-black border-dashed mt-1 pt-0.5">
-                      <div className="flex justify-between py-0.5 font-bold">
-                        <span>Tunai / DP:</span>
-                        <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
-                      </div>
-                      <div className="flex justify-between py-0.5 font-bold text-xs mt-0.5">
-                        <span>SISA KURANG:</span>
-                        <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
+              {/* Receipt Pages List (10 items max per page, fixed height, footer locked at bottom) */}
+              {Array.from({ length: totalPages }).map((_, pageIdx) => {
+                const pageItems = receiptData.items.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
+                const isLastPage = pageIdx === totalPages - 1;
+                return (
+                  <div
+                    key={pageIdx}
+                    translate="no"
+                    className={`notranslate receipt-page bg-white p-6 shadow-2xl relative print:shadow-none print:p-0 print:max-w-none print:w-[185mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[11px] leading-tight flex flex-col justify-between h-[132mm] print:h-[132mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                  >
+                    {/* 1. Header (Pinned at Top) */}
+                    <div className="shrink-0 mb-1">
+                      <div className="flex justify-between items-start mb-1 text-[11px]">
+                        <div className="max-w-[85mm] leading-tight space-y-0.5">
+                          <h2 className="text-[13px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                          <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
+                          <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                          <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
+                        </div>
+                        <div className="text-center">
+                          <h1 className="text-lg font-bold tracking-[0.3em]">FAKTUR</h1>
+                          <div className="text-[10px]">Hal : {pageIdx + 1} / {totalPages}</div>
+                        </div>
+                        <div className="text-right text-[11px] leading-tight space-y-0.5">
+                          <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
+                          <div>No. Faktur: {receiptData.invoiceNo}</div>
+                          <div>Kasir     : Admin</div>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
+                    
+                    {/* 2. Table Area (Flex-1 fills middle, keeping footer anchored at bottom) */}
+                    <div className="flex-1 flex flex-col justify-start">
+                      <table className="w-full text-left border-collapse text-[11px]">
+                        <thead>
+                          <tr className="border-t border-b border-black border-dashed">
+                            <th className="py-1 font-bold w-8 text-center">NO.</th>
+                            <th className="py-1 font-bold">NAMA BARANG</th>
+                            <th className="py-1 font-bold text-right w-24">QTY</th>
+                            <th className="py-1 font-bold text-right w-24">HARGA</th>
+                            <th className="py-1 font-bold text-right w-28">JUMLAH</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pageItems.map((item, idx) => (
+                            <tr key={idx} className="border-b border-gray-100 print:border-none">
+                              <td className="py-0.5 text-center align-top">{pageIdx * ITEMS_PER_PAGE + idx + 1}</td>
+                              <td className="py-0.5 align-top">
+                                {item.material.code ? `[${item.material.code}] ` : ''}
+                                {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
+                              </td>
+                              <td className="py-0.5 text-right align-top whitespace-nowrap">
+                                {item.display_quantity} {item.display_unit.toUpperCase()}
+                              </td>
+                              <td className="py-0.5 text-right align-top whitespace-nowrap">{item.display_price.toLocaleString("id-ID")}</td>
+                              <td className="py-0.5 text-right align-top font-bold whitespace-nowrap">{item.subtotal.toLocaleString("id-ID")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* 3. Footer (Always Pinned at Bottom of 132mm Page) */}
+                    <div className="shrink-0 border-t border-black border-dashed pt-2 text-[11px]">
+                      <div className="flex justify-between items-start">
+                        <div className="text-center w-36">
+                          <p className="mb-8 font-medium">Tanda Terima</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
+                        </div>
+                        <div className="text-center w-36">
+                          <p className="mb-8 font-medium">Hormat Kami</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
+                        </div>
+                        <div className="w-56 text-right text-[11px]">
+                          <div className="flex justify-between py-0.5">
+                            <span>Sub Total:</span>
+                            <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                          </div>
+                          <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
+                            <span>Total:</span>
+                            <span className="text-[12px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                          </div>
+                          {receiptData.paymentStatus === 'DP' && (
+                            <div className="border-t border-black border-dashed mt-1 pt-0.5">
+                              <div className="flex justify-between py-0.5 font-bold">
+                                <span>Tunai / DP:</span>
+                                <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
+                              </div>
+                              <div className="flex justify-between py-0.5 font-bold text-xs mt-0.5">
+                                <span>SISA KURANG:</span>
+                                <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
               
-              <div className="clear-both"></div>
-              <div className="text-center text-[11px] mt-4 pt-2 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+              {/* Print Instruction Banner (Hidden when printing) */}
+              <div className="text-center text-[11px] mt-4 pt-2 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200 max-w-[185mm] mx-auto">
                 <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK STRUK NCR (9.5" x 11" : 2 / Setengah Lembar):</p>
                 <p>1. Margin: Pilih <b>"Tidak ada" (None)</b> atau <b>"Minimum"</b>.</p>
                 <p>2. <b>Pastikan centang "Header dan footer" TIDAK DICENTANG (KOSONG)</b> agar tidak menghalangi nota.</p>
@@ -809,8 +833,8 @@ export default function POSDashboard() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Main Content (Hidden during print) */}
       <div className="print:hidden space-y-12">
