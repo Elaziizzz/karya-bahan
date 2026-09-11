@@ -142,19 +142,18 @@ input[type=number] {
   .receipt-modal-root {
     position: static !important;
     width: 100% !important;
-    max-width: 195mm !important;
+    max-width: 185mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
   }
   .receipt-page {
-    width: 172mm !important;
-    max-width: 172mm !important;
-    min-height: 92mm !important;
-    max-height: 115mm !important;
+    width: 185mm !important;
+    max-width: 185mm !important;
+    min-height: 98mm !important;
+    max-height: 120mm !important;
     height: auto !important;
     margin: 0 auto !important;
     box-sizing: border-box !important;
-    zoom: 1.1 !important;
   }
   .receipt-page-break {
     page-break-after: always !important;
