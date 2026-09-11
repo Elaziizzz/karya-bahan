@@ -504,8 +504,19 @@ export default function POSDashboard() {
     const qtyNum = Number(quantity); // user input (e.g. 3)
     const baseQtyNum = qtyNum * multiplier; // (e.g. 45)
 
-    if (baseQtyNum > selectedMaterial.current_stock) {
-      showToast("Stok tidak cukup! (Sisa: " + selectedMaterial.current_stock + ")", "error");
+    // Calculate how much of this item is ALREADY in the cart
+    const existingInCart = cart
+      .filter(item => item.material.id === selectedMaterial.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    const totalRequestedQty = existingInCart + baseQtyNum;
+
+    if (totalRequestedQty > selectedMaterial.current_stock) {
+      const remainingAvailable = Math.max(0, selectedMaterial.current_stock - existingInCart);
+      showToast(
+        `Stok tidak cukup! Sisa stok tersedia: ${remainingAvailable} ${baseUnit} (Sudah di keranjang: ${existingInCart} ${baseUnit})`,
+        "error"
+      );
       return;
     }
 
@@ -552,6 +563,35 @@ export default function POSDashboard() {
   async function handleCheckout() {
     if (cart.length === 0) return;
     setLoading(true);
+
+    // Final pre-checkout stock verification directly against database
+    const cartMaterialIds = Array.from(new Set(cart.map(item => item.material.id)));
+    const { data: currentMats, error: stockCheckErr } = await supabase
+      .from("materials")
+      .select("id, name, current_stock")
+      .in("id", cartMaterialIds);
+
+    if (stockCheckErr || !currentMats) {
+      showToast("Gagal memverifikasi stok barang. Silakan coba lagi.", "error");
+      setLoading(false);
+      return;
+    }
+
+    for (const mat of currentMats) {
+      const totalQtyInCart = cart
+        .filter(item => item.material.id === mat.id)
+        .reduce((sum, item) => sum + item.quantity, 0);
+
+      if (totalQtyInCart > mat.current_stock) {
+        showToast(
+          `Checkout gagal! Stok "${displayMaterialName(mat.name)}" tidak mencukupi (Tersedia: ${mat.current_stock}, Diminta: ${totalQtyInCart}).`,
+          "error"
+        );
+        setLoading(false);
+        fetchData(activeStore);
+        return;
+      }
+    }
 
     const txDate = transactionDate ? new Date(transactionDate) : new Date();
     const invoiceNo = `KB-${txDate.getTime()}`;
@@ -711,7 +751,12 @@ export default function POSDashboard() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (highlightedIndex >= 0 && highlightedIndex < filteredMaterials.length) {
-        selectMaterial(filteredMaterials[highlightedIndex]);
+        const item = filteredMaterials[highlightedIndex];
+        if (item.current_stock <= 0) {
+          showToast(`Stok "${displayMaterialName(item.name)}" HABIS (0)! Silakan restok dulu.`, "error");
+          return;
+        }
+        selectMaterial(item);
       }
     } else if (e.key === 'Escape') {
       setIsDropdownOpen(false);
@@ -913,23 +958,37 @@ export default function POSDashboard() {
                     {filteredMaterials.length === 0 ? (
                       <div className="p-3 text-gray-500 text-sm">Tidak ditemukan...</div>
                     ) : (
-                      filteredMaterials.map((m, index) => (
-                        <div
-                          key={m.id}
-                          className={`p-3 cursor-pointer border-b border-gray-100 transition-colors flex justify-between items-center ${m.current_stock <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} ${selectedMaterialId === m.id ? 'bg-gray-200 font-bold' : ''} ${highlightedIndex === index ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'}`}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            selectMaterial(m);
-                          }}
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                        >
-                          <div>
-                            {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{m.code}</span>}
-                            <span>{displayMaterialName(m.name)}</span>
+                      filteredMaterials.map((m, index) => {
+                        const isOutOfStock = m.current_stock <= 0;
+                        return (
+                          <div
+                            key={m.id}
+                            className={`p-3 border-b border-gray-100 transition-colors flex justify-between items-center ${
+                              isOutOfStock 
+                                ? 'bg-red-50/60 opacity-60 cursor-not-allowed' 
+                                : 'cursor-pointer hover:bg-gray-100'
+                            } ${selectedMaterialId === m.id ? 'bg-gray-200 font-bold' : ''} ${
+                              highlightedIndex === index ? 'bg-blue-50 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'
+                            }`}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              if (isOutOfStock) {
+                                showToast(`Stok "${displayMaterialName(m.name)}" HABIS (0)! Silakan restok dulu.`, "error");
+                                return;
+                              }
+                              selectMaterial(m);
+                            }}
+                            onMouseEnter={() => !isOutOfStock && setHighlightedIndex(index)}
+                          >
+                            <div className="flex items-center gap-2">
+                              {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
+                              <span className={isOutOfStock ? 'line-through text-gray-500' : ''}>{displayMaterialName(m.name)}</span>
+                              {isOutOfStock && <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded shadow-sm">HABIS</span>}
+                            </div>
+                            <div className={`text-xs font-mono ${isOutOfStock ? 'text-red-600 font-bold' : 'text-gray-500'}`}>Stock: {m.current_stock}</div>
                           </div>
-                          <div className="text-xs text-gray-500 font-mono">Stock: {m.current_stock}</div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}

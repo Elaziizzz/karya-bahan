@@ -764,9 +764,16 @@ export default function MaterialsPage() {
                 <td className="p-4 border-r border-gray-200 font-mono text-xs">{item.code || "-"}</td>
                 <td className="p-4 border-r border-gray-200 group-hover:text-blue-600 transition-colors">
                     <div className="flex flex-col gap-1 items-start">
-                      <span className="font-bold">
-                        {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {item.code && (
+                          <span className="text-[11px] font-mono bg-gray-100 text-gray-800 border border-black px-1.5 py-0.5 rounded font-bold">
+                            {item.code}
+                          </span>
+                        )}
+                        <span className="font-bold">
+                          {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
+                        </span>
+                      </div>
                       {item.name.match(/\s*=\s*\((.*?)\)$/) && (
                         <span className="text-[10px] bg-yellow-200 text-yellow-900 border border-yellow-400 px-2 py-0.5 font-bold uppercase rounded-sm shadow-sm inline-flex items-center gap-1">
                           <User className="w-3 h-3" /> Investor: {item.name.match(/\s*=\s*\((.*?)\)$/)?.[1]}
