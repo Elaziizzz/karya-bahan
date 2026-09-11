@@ -139,5 +139,9 @@ input[type=number] {
     page-break-after: always !important;
     break-after: page !important;
   }
+  [class*="animate-toast"], [role="alert"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
 }
 
