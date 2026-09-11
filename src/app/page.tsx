@@ -347,6 +347,67 @@ export default function POSDashboard() {
     fetchData(activeStore);
   }
 
+  function printNotaStruk(items: Transaction[], time: string, totalNota: number) {
+    const invoiceNo = `KB-${new Date(time).getTime()}`;
+    const firstItem = items[0];
+    const isDp = firstItem?.payment_status === 'DP';
+    const dpNum = isDp ? (Number(firstItem.dp_amount) || 0) : totalNota;
+
+    setReceiptData({
+      invoiceNo,
+      date: new Date(time),
+      items: items.map(t => {
+        const mat = materials.find(m => m.id === t.material_id) || {
+          id: t.material_id,
+          name: t.materials?.name || "-",
+          price: t.total_price / t.quantity,
+          cost_price: t.cost_price,
+          store: activeStore,
+          current_stock: 0
+        };
+
+        let display_quantity = t.quantity;
+        let display_unit = 'Pcs';
+        let pack_multiplier = 1;
+        let display_price = Math.round(t.total_price / t.quantity);
+
+        const packMatch = mat.name.match(/-\s*\[1\s+([^=]+?)\s*=\s*(\d+)\s+([^@\]]+?)(?:\s*@\s*(\d+))?\](?:\s*=\s*\((.*?)\))?$/);
+        if (packMatch) {
+          const packName = packMatch[1].trim();
+          const packMult = Number(packMatch[2]);
+          if (t.quantity % packMult === 0 && t.quantity >= packMult) {
+            display_quantity = t.quantity / packMult;
+            display_unit = packName;
+            pack_multiplier = packMult;
+            display_price = packMatch[4] ? Number(packMatch[4]) : display_price * packMult;
+          } else {
+            display_unit = packMatch[3].trim();
+          }
+        } else {
+          const baseMatch = mat.name.match(/-\s*\[([^=\]]+?)\](?:\s*=\s*\((.*?)\))?$/);
+          if (baseMatch) {
+            display_unit = baseMatch[1].trim();
+          }
+        }
+
+        return {
+          material: mat,
+          quantity: t.quantity,
+          subtotal: t.total_price,
+          display_quantity,
+          display_unit,
+          display_price,
+          pack_multiplier
+        };
+      }),
+      total: totalNota,
+      customerName: firstItem?.customer_name || "-",
+      customerPhone: firstItem?.customer_phone || "-",
+      paymentStatus: firstItem?.payment_status || "LUNAS",
+      dpAmount: dpNum
+    });
+  }
+
   async function handleProcessPelunasan() {
     if (!selectedDebt) return;
     const payVal = Number(pelunasanAmount);
@@ -1401,12 +1462,19 @@ export default function POSDashboard() {
                                   <div className="bg-yellow-500 text-black px-2 py-0.5 text-xs font-bold animate-pulse rounded border border-black">BELUM LUNAS</div>
                                 )}
                                 <div className="flex gap-2">
+                                  <button
+                                    onClick={() => printNotaStruk(items, time, totalNota)}
+                                    className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-xs font-bold rounded transition-colors border border-black flex items-center gap-1 shadow-sm"
+                                    title="Cetak ulang struk nota ini tanpa memotong stok"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" /> Cetak
+                                  </button>
                                   {items[0]?.payment_status === 'DP' && (
                                     <button onClick={() => lunasiNota(items)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-green-800 shadow-[2px_2px_0_0_#000]">LUNASKAN</button>
                                   )}
-                                <button onClick={() => editFullNota(items)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-blue-800">Edit</button>
-                                <button onClick={() => deleteFullNota(items)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-red-800">Hapus</button>
-                              </div>
+                                  <button onClick={() => editFullNota(items)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-blue-800">Edit</button>
+                                  <button onClick={() => deleteFullNota(items)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 text-xs font-bold rounded transition-colors border border-red-800">Hapus</button>
+                                </div>
                             </div>
                           </div>
                           <table className="w-full text-sm">
