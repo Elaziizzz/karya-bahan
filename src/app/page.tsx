@@ -65,6 +65,7 @@ export default function POSDashboard() {
   const [selectedDebtKey, setSelectedDebtKey] = useState<string>("");
   const [pelunasanAmount, setPelunasanAmount] = useState<string>("");
   const [dpAmount, setDpAmount] = useState("");
+  const [transactionDate, setTransactionDate] = useState("");
 
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [editQty, setEditQty] = useState("");
@@ -101,6 +102,10 @@ export default function POSDashboard() {
   }, [receiptData]);
 
   useEffect(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    setTransactionDate(now.toISOString().slice(0, 16));
+
     fetchData("karya_bahan");
 
     const materialSubscription = supabase
@@ -548,8 +553,8 @@ export default function POSDashboard() {
     if (cart.length === 0) return;
     setLoading(true);
 
-    const now = new Date();
-    const invoiceNo = `KB-${now.getTime()}`;
+    const txDate = transactionDate ? new Date(transactionDate) : new Date();
+    const invoiceNo = `KB-${txDate.getTime()}`;
 
     const isDp = paymentMode === "DP";
     const dpNum = isDp ? (Number(dpAmount) || 0) : cartTotal;
@@ -561,7 +566,7 @@ export default function POSDashboard() {
       cost_price: item.material.cost_price,
       total_price: item.subtotal,
       store: activeStore,
-      created_at: now.toISOString(),
+      created_at: txDate.toISOString(),
       customer_name: customerName.trim() || "-",
       customer_phone: customerPhone.trim() || "-",
       payment_status: isDp ? "DP" : "LUNAS",
@@ -575,15 +580,15 @@ export default function POSDashboard() {
       // Sync to Google Sheets
       if (insertedData) {
         try {
-          const year = now.getFullYear().toString();
+          const year = txDate.getFullYear().toString();
           const notaItemsText = cart.map(item => `${item.display_quantity} ${item.display_unit} ${displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}`).join(', ');
           const grandTotal = cartTotal;
           const sisaValue = Math.max(0, grandTotal - dpNum);
           
           const sheetPayload = [[
             invoiceNo,
-            format(now, "yyyy-MM-dd"),
-            format(now, "HH:mm"),
+            format(txDate, "yyyy-MM-dd"),
+            format(txDate, "HH:mm"),
             activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Bysca',
             'JUAL (OUT) - NOTA',
             notaItemsText,
@@ -612,7 +617,7 @@ export default function POSDashboard() {
       showToast("Transaksi berhasil disimpan", "success");
       setReceiptData({
         invoiceNo,
-        date: now,
+        date: txDate,
         items: [...cart],
         total: cartTotal,
         customerName: customerName.trim() || "-",
@@ -625,6 +630,9 @@ export default function POSDashboard() {
       setCustomerPhone("");
       setPaymentMode("LUNAS");
       setDpAmount("");
+      const resetNow = new Date();
+      resetNow.setMinutes(resetNow.getMinutes() - resetNow.getTimezoneOffset());
+      setTransactionDate(resetNow.toISOString().slice(0, 16));
       fetchData(activeStore);
     } else {
       console.error(error);
@@ -1212,26 +1220,42 @@ export default function POSDashboard() {
                 ) : (
                   /* Standard Checkout Area (LUNAS or DP) */
                   <>
-                    <div className="mb-4 grid grid-cols-2 gap-4 border-b border-gray-300 pb-4">
+                    <div className="mb-4 space-y-3 border-b border-gray-300 pb-4">
                       <div>
-                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Nama Customer (Opsional)</label>
+                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center justify-between">
+                          <span>Tanggal & Waktu Transaksi</span>
+                          <span className="text-[10px] text-blue-600 font-normal lowercase">*bisa diubah jika mencatat transaksi kemarin</span>
+                        </label>
                         <input
-                          type="text"
-                          className="w-full p-2 border border-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value.toUpperCase())}
-                          placeholder="Mis: PAK BUDI"
+                          type="datetime-local"
+                          className="w-full p-2.5 border border-black bg-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-black transition-colors"
+                          value={transactionDate}
+                          onChange={(e) => setTransactionDate(e.target.value)}
+                          required
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs font-bold uppercase mb-1 text-gray-700">No. Telp (Opsional)</label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border border-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          placeholder="Mis: 0812..."
-                        />
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold uppercase mb-1 text-gray-700">Nama Customer (Opsional)</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value.toUpperCase())}
+                            placeholder="Mis: PAK BUDI"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold uppercase mb-1 text-gray-700">No. Telp (Opsional)</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            placeholder="Mis: 0812..."
+                          />
+                        </div>
                       </div>
 
                       {paymentMode === 'DP' && (
