@@ -149,8 +149,8 @@ input[type=number] {
   .receipt-page {
     width: 172mm !important;
     max-width: 172mm !important;
-    height: 105mm !important;
-    max-height: 105mm !important;
+    height: 95mm !important;
+    max-height: 95mm !important;
     margin: 0 auto !important;
     overflow: hidden !important;
     box-sizing: border-box !important;

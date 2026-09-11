@@ -723,7 +723,7 @@ export default function POSDashboard() {
                 </button>
               </div>
               
-              {/* Receipt Pages List (10 items max per page, 105mm height for Margin: Default) */}
+              {/* Receipt Pages List (10 items max per page, 95mm height for Margin: Default) */}
               {Array.from({ length: totalPages }).map((_, pageIdx) => {
                 const pageItems = receiptData.items.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
                 const isLastPage = pageIdx === totalPages - 1;
@@ -731,7 +731,7 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-1 print:pb-1 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[11.5px] leading-tight flex flex-col justify-between h-[105mm] print:h-[105mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[11.5px] leading-tight flex flex-col justify-between h-[95mm] print:h-[95mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1">
