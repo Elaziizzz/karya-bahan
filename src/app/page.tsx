@@ -710,8 +710,8 @@ export default function POSDashboard() {
         const ITEMS_PER_PAGE = 10;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-full print:max-w-[190mm] print:mx-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-full print:mx-auto">
+          <div className="receipt-modal-root fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[172mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto print:max-w-none print:w-[172mm] print:mx-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-3 print:hidden">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-medium" title="Cetak">
@@ -723,7 +723,7 @@ export default function POSDashboard() {
                 </button>
               </div>
               
-              {/* Receipt Pages List (10 items max per page, 120mm height, built-in top margin pt-3) */}
+              {/* Receipt Pages List (10 items max per page, 105mm height for Margin: Default) */}
               {Array.from({ length: totalPages }).map((_, pageIdx) => {
                 const pageItems = receiptData.items.slice(pageIdx * ITEMS_PER_PAGE, (pageIdx + 1) * ITEMS_PER_PAGE);
                 const isLastPage = pageIdx === totalPages - 1;
@@ -731,22 +731,22 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-3 print:pb-1 print:max-w-none print:w-full print:mx-auto text-black font-mono print:font-mono w-full max-w-[190mm] mx-auto text-[12px] leading-snug flex flex-col justify-between h-[120mm] print:h-[120mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-1 print:pb-1 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[11.5px] leading-tight flex flex-col justify-between h-[105mm] print:h-[105mm] mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
-                    {/* 1. Header (Pinned at Top with Built-in Margin) */}
+                    {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1">
-                      <div className="flex justify-between items-start mb-1 text-[12px]">
-                        <div className="max-w-[90mm] leading-tight space-y-0.5">
+                      <div className="flex justify-between items-start mb-1 text-[11.5px]">
+                        <div className="max-w-[85mm] leading-tight space-y-0.5">
                           <h2 className="text-[14px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
                           <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
                           <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
                           <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                         </div>
                         <div className="text-center pt-0.5">
-                          <h1 className="text-xl font-bold tracking-[0.25em]">FAKTUR</h1>
-                          <div className="text-[11px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
+                          <h1 className="text-xl font-bold tracking-[0.2em]">FAKTUR</h1>
+                          <div className="text-[10px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
                         </div>
-                        <div className="text-right text-[12px] leading-tight space-y-0.5">
+                        <div className="text-right text-[11.5px] leading-tight space-y-0.5">
                           <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                           <div>No. Faktur: {receiptData.invoiceNo}</div>
                           <div>Kasir     : Admin</div>
@@ -756,14 +756,14 @@ export default function POSDashboard() {
                     
                     {/* 2. Table Area (Flex-1 fills middle, 10 items max) */}
                     <div className="flex-1 flex flex-col justify-start overflow-hidden">
-                      <table className="w-full text-left border-collapse text-[12px]">
+                      <table className="w-full text-left border-collapse text-[11.5px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
-                            <th className="py-0.5 font-bold w-8 text-center">NO.</th>
+                            <th className="py-0.5 font-bold w-7 text-center">NO.</th>
                             <th className="py-0.5 font-bold">NAMA BARANG</th>
-                            <th className="py-0.5 font-bold text-right w-24">QTY</th>
-                            <th className="py-0.5 font-bold text-right w-24">HARGA</th>
-                            <th className="py-0.5 font-bold text-right w-28">JUMLAH</th>
+                            <th className="py-0.5 font-bold text-right w-20">QTY</th>
+                            <th className="py-0.5 font-bold text-right w-20">HARGA</th>
+                            <th className="py-0.5 font-bold text-right w-24">JUMLAH</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -785,18 +785,18 @@ export default function POSDashboard() {
                       </table>
                     </div>
                     
-                    {/* 3. Footer (Always Pinned at Bottom of 120mm Page, Safe from Perforation) */}
-                    <div className="shrink-0 border-t border-black border-dashed pt-1 text-[12px]">
+                    {/* 3. Footer (Always Pinned at Bottom of 105mm Page, Safe with Margin: Default) */}
+                    <div className="shrink-0 border-t border-black border-dashed pt-1 text-[11.5px]">
                       <div className="flex justify-between items-start">
-                        <div className="text-center w-36">
-                          <p className="mb-4 font-medium">Tanda Terima</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none">(....................)</p>
+                        <div className="text-center w-32">
+                          <p className="mb-3 font-medium">Tanda Terima</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
-                        <div className="text-center w-36">
-                          <p className="mb-4 font-medium">Hormat Kami</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none">(....................)</p>
+                        <div className="text-center w-32">
+                          <p className="mb-3 font-medium">Hormat Kami</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11px] select-none">(....................)</p>
                         </div>
-                        <div className="w-56 text-right text-[12px]">
+                        <div className="w-52 text-right text-[11.5px]">
                           <div className="flex justify-between py-0.5">
                             <span>Sub Total:</span>
                             <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
@@ -825,10 +825,10 @@ export default function POSDashboard() {
               })}
               
               {/* Print Instruction Banner (Hidden when printing) */}
-              <div className="text-center text-[11px] mt-4 pt-2 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200 max-w-[190mm] mx-auto">
+              <div className="text-center text-[11px] mt-4 pt-2 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200 max-w-[172mm] mx-auto">
                 <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK STRUK CONTINUOUS FORM (Setengah Lembar / 229 x 162 mm):</p>
                 <p>1. Ukuran Kertas di Printer: Pilih <b>Envelope C5 229 x 162 mm</b> atau <b>Letter Fanfold 8 1/2 x 11 in</b>.</p>
-                <p>2. Margin: Pilih <b>"Tidak ada" (None)</b> (jarak atas sudah otomatis diset pas di nota agar rapi).</p>
+                <p>2. Margin: Pilih <b>Default</b> (posisi otomatis pas di tengah, aman dari lubang kertas dan tidak mentok).</p>
                 <p>3. <b>Hilangkan centang "Header dan footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
               </div>
             </div>

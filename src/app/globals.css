@@ -115,17 +115,15 @@ input[type=number] {
   animation: slideOutRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-/* Print styles for NCR Receipt 9.5" x 11" : 2 / Envelope C5 (229mm x 162mm) */
+/* Print styles for NCR Receipt 9.5" x 11" : 2 / Envelope C5 with Margin: Default */
 @media print {
   @page {
     size: auto;
-    margin: 0mm;
   }
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     background: white !important;
@@ -144,13 +142,16 @@ input[type=number] {
   .receipt-modal-root {
     position: static !important;
     width: 100% !important;
-    max-width: 190mm !important;
+    max-width: 172mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
   }
   .receipt-page {
-    height: 120mm !important;
-    max-height: 120mm !important;
+    width: 172mm !important;
+    max-width: 172mm !important;
+    height: 105mm !important;
+    max-height: 105mm !important;
+    margin: 0 auto !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
   }
