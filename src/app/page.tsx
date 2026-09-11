@@ -731,22 +731,22 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[12px] leading-tight flex flex-col justify-between min-h-[92mm] print:min-h-[92mm] print:h-auto mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-5 pt-6 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[172mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[172mm] mx-auto text-[12.5px] leading-tight flex flex-col justify-between min-h-[92mm] print:min-h-[92mm] print:h-auto mb-6 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1">
-                      <div className="flex justify-between items-start mb-1 text-[12px]">
+                      <div className="flex justify-between items-start mb-1 text-[12.5px]">
                         <div className="max-w-[85mm] leading-tight space-y-0.5">
-                          <h2 className="text-[14.5px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                          <h2 className="text-[15px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
                           <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
                           <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
                           <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                         </div>
                         <div className="text-center pt-0.5">
                           <h1 className="text-xl font-bold tracking-[0.2em]">FAKTUR</h1>
-                          <div className="text-[10.5px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
+                          <div className="text-[11px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
                         </div>
-                        <div className="text-right text-[12px] leading-tight space-y-0.5">
+                        <div className="text-right text-[12.5px] leading-tight space-y-0.5">
                           <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                           <div>No. Faktur: {receiptData.invoiceNo}</div>
                           <div>Kasir     : Admin</div>
@@ -757,7 +757,7 @@ export default function POSDashboard() {
                     
                     {/* 2. Table Area (Flex-1 fills middle, 10 items max) */}
                     <div className="flex-1 flex flex-col justify-start">
-                      <table className="w-full text-left border-collapse text-[12px]">
+                      <table className="w-full text-left border-collapse text-[12.5px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
                             <th className="py-0.5 font-bold w-7 text-center">NO.</th>
@@ -787,24 +787,24 @@ export default function POSDashboard() {
                     </div>
                     
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
-                    <div className="shrink-0 border-t border-black border-dashed pt-1 text-[12px]">
+                    <div className="shrink-0 border-t border-black border-dashed pt-1 text-[12.5px]">
                       <div className="flex justify-between items-stretch">
                         <div className="text-center w-32 flex flex-col justify-between self-stretch">
                           <p className="font-medium">Tanda Terima</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11.5px] select-none mt-auto py-0.5">(....................)</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none mt-auto py-0.5">(....................)</p>
                         </div>
                         <div className="text-center w-32 flex flex-col justify-between self-stretch">
                           <p className="font-medium">Hormat Kami</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[11.5px] select-none mt-auto py-0.5">(....................)</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none mt-auto py-0.5">(....................)</p>
                         </div>
-                        <div className="w-52 text-right text-[12px]">
+                        <div className="w-52 text-right text-[12.5px]">
                           <div className="flex justify-between py-0.5">
                             <span>Sub Total:</span>
                             <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                           </div>
                           <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
                             <span>Total:</span>
-                            <span className="text-[13.5px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                            <span className="text-[14px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                           </div>
                           {(receiptData.paymentStatus === 'DP' || (receiptData.dpAmount && receiptData.dpAmount < receiptData.total)) && (
                             <div className="border-t border-black border-dashed mt-0.5 pt-0.5">
@@ -812,7 +812,7 @@ export default function POSDashboard() {
                                 <span>Tunai / DP:</span>
                                 <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                               </div>
-                              <div className="flex justify-between py-0.5 font-bold text-[11px] mt-0.5">
+                              <div className="flex justify-between py-0.5 font-bold text-[11.5px] mt-0.5">
                                 <span>SISA KURANG:</span>
                                 <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                               </div>
