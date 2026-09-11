@@ -788,23 +788,28 @@ export default function POSDashboard() {
                     
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
                     <div className="shrink-0 border-t border-black border-dashed pt-2 text-[13px]">
-                      <div className="flex justify-between items-start">
-                        <div className="text-center w-36 flex flex-col justify-between min-h-[75px] h-[75px]">
+                      <div className="flex justify-between items-stretch" style={{ minHeight: '105px' }}>
+                        {/* Kolom 1: Tanda Terima */}
+                        <div className="text-center w-36 flex flex-col justify-between self-stretch" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                           <p className="font-medium">Tanda Terima</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none mt-auto pt-8">(....................)</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none py-0.5" style={{ marginTop: 'auto' }}>(....................)</p>
                         </div>
-                        <div className="text-center w-36 flex flex-col justify-between min-h-[75px] h-[75px]">
+                        {/* Kolom 2: Hormat Kami */}
+                        <div className="text-center w-36 flex flex-col justify-between self-stretch" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                           <p className="font-medium">Hormat Kami</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none mt-auto pt-8">(....................)</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12px] select-none py-0.5" style={{ marginTop: 'auto' }}>(....................)</p>
                         </div>
-                        <div className="w-60 text-right text-[13px]">
-                          <div className="flex justify-between py-0.5">
-                            <span>Sub Total:</span>
-                            <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
-                          </div>
-                          <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
-                            <span>Total:</span>
-                            <span className="text-[15px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                        {/* Kolom 3: Rincian Pembayaran */}
+                        <div className="w-64 text-right text-[13px] flex flex-col justify-between" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div className="flex justify-between py-0.5">
+                              <span>Sub Total:</span>
+                              <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
+                              <span>Total:</span>
+                              <span className="text-[15px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                            </div>
                           </div>
                           {(receiptData.paymentStatus === 'DP' || (receiptData.dpAmount && receiptData.dpAmount < receiptData.total)) && (
                             <div className="border-t border-black border-dashed mt-0.5 pt-0.5">
