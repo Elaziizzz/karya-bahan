@@ -707,8 +707,8 @@ export default function POSDashboard() {
       
       {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
       {receiptData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:static print:bg-white print:z-auto print:flex print:items-start print:justify-start">
-          <div className="bg-white p-8 max-w-3xl w-full shadow-2xl relative print:shadow-none print:p-0 print:max-w-full print:w-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 print:static print:bg-white print:z-auto print:block print:w-[185mm] print:mx-auto">
+          <div className="bg-white p-6 max-w-3xl w-full shadow-2xl relative print:shadow-none print:p-0 print:max-w-none print:w-[185mm] print:mx-auto">
             <div className="absolute top-2 right-2 flex gap-2 print:hidden">
               <button onClick={() => window.print()} className="p-2 bg-gray-200 hover:bg-gray-300 rounded transition-colors" title="Cetak">
                 <Printer className="w-5 h-5" />
@@ -718,96 +718,93 @@ export default function POSDashboard() {
               </button>
             </div>
             
-            {/* Receipt Content NCR 2-ply Style */}
-            <div className="text-black font-mono print:font-mono w-full text-[11px] leading-relaxed">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-lg tracking-widest">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                  <p className="mt-4">Alamat : {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                  <p>Telepon: {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
-                  <p>Sales  : Admin</p>
-                    <div className="mt-2 border-t border-dashed border-black pt-2 w-48">
-                      <p>Customer: <b>{receiptData.customerName || "-"}</b></p>
-                      <p>No. Telp: {receiptData.customerPhone || "-"}</p>
-                    </div>
-                  </div>
-                <div className="text-center">
-                  <div className="mb-4">Hal : 1</div>
-                  <h1 className="text-xl tracking-[0.5em] mb-4">FAKTUR</h1>
+            {/* Receipt Content NCR 2-ply Style (Fit for 9.5" x 11" : 2 / 185mm safe printable width) */}
+            <div className="text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[10px] leading-tight">
+              <div className="flex justify-between items-start mb-3">
+                <div className="max-w-[75mm]">
+                  <h2 className="text-sm font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                  <p className="mt-1">Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
+                  <p>Telp: {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                  <p>Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                 </div>
-                <div className="text-right">
-                  <div className="mb-4 text-transparent">Hal : 1</div>
-                  <div className="flex gap-2 justify-end"><span className="w-20 text-left">Tanggal</span>: <span>{format(receiptData.date, "dd-MMM-yyyy HH:mm")}</span></div>
-                  <div className="flex gap-2 justify-end"><span className="w-20 text-left">No. Faktur</span>: <span>{receiptData.invoiceNo}</span></div>
+                <div className="text-center">
+                  <h1 className="text-lg font-bold tracking-[0.3em]">FAKTUR</h1>
+                  <div className="text-[10px] mt-0.5">Hal : 1</div>
+                </div>
+                <div className="text-right text-[10px]">
+                  <div>Tanggal: {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
+                  <div>No. Faktur: {receiptData.invoiceNo}</div>
+                  <div>Kasir: Admin</div>
                 </div>
               </div>
               
-              <table className="w-full text-left mb-4 border-collapse">
+              <table className="w-full text-left mb-2 border-collapse text-[10px]">
                 <thead>
                   <tr className="border-t border-b border-black border-dashed">
-                    <th className="py-2 font-normal w-10">NO.</th>
-                    <th className="py-2 font-normal">NAMA BARANG</th>
-                    <th className="py-2 font-normal text-right w-24">QTY</th>
-                    <th className="py-2 font-normal text-right w-24">HARGA</th>
-                                        <th className="py-2 font-normal text-right w-32">JUMLAH</th>
+                    <th className="py-1 font-bold w-8 text-center">NO.</th>
+                    <th className="py-1 font-bold">NAMA BARANG</th>
+                    <th className="py-1 font-bold text-right w-20">QTY</th>
+                    <th className="py-1 font-bold text-right w-24">HARGA</th>
+                    <th className="py-1 font-bold text-right w-28">JUMLAH</th>
                   </tr>
                 </thead>
                 <tbody>
                   {receiptData.items.map((item, idx) => (
                     <tr key={idx}>
-                      <td className="py-1 align-top">{idx + 1}</td>
-                      <td className="py-1 align-top">
+                      <td className="py-0.5 text-center align-top">{idx + 1}</td>
+                      <td className="py-0.5 align-top">
                         {item.material.code ? `[${item.material.code}] ` : ''}
                         {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
                       </td>
-                      <td className="py-1 text-right align-top">
+                      <td className="py-0.5 text-right align-top">
                         {item.display_quantity} {item.display_unit.toUpperCase()}
                       </td>
-                      <td className="py-1 text-right align-top">{item.display_price.toLocaleString("id-ID")}</td>
-                                            <td className="py-1 text-right align-top">{item.subtotal.toLocaleString("id-ID")}</td>
+                      <td className="py-0.5 text-right align-top">{item.display_price.toLocaleString("id-ID")}</td>
+                      <td className="py-0.5 text-right align-top font-bold">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               
-              <div className="border-t border-black border-dashed pt-2 flex justify-between items-start">
-                <div className="text-center ml-8">
-                  <p className="mb-16">Tanda Terima</p>
+              <div className="border-t border-black border-dashed pt-2 flex justify-between items-start text-[10px]">
+                <div className="text-center w-28">
+                  <p className="mb-10">Tanda Terima</p>
                   <p>(...................)</p>
                 </div>
-                <div className="text-center">
-                  <p className="mb-16">Hormat Kami</p>
+                <div className="text-center w-28">
+                  <p className="mb-10">Hormat Kami</p>
                   <p>(...................)</p>
                 </div>
-                <div className="w-64">
-                  <div className="flex justify-between py-1">
-                    <span>Sub Total :</span>
-                    <span>{receiptData.total.toLocaleString("id-ID")}</span>
+                <div className="w-56 text-right">
+                  <div className="flex justify-between py-0.5">
+                    <span>Sub Total:</span>
+                    <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
-                                    <div className="flex justify-between py-1 font-bold">
-                    <span>Total     :</span>
-                      <span>{receiptData.total.toLocaleString("id-ID")}</span>
-                    </div>
-                    {receiptData.paymentStatus === 'DP' && (
-                      <div className="border-t border-black border-dashed mt-1 pt-1">
-                        <div className="flex justify-between py-1 font-bold">
-                          <span>Tunai / DP :</span>
-                          <span>{receiptData.dpAmount.toLocaleString("id-ID")}</span>
-                        </div>
-                        <div className="flex justify-between py-1 font-bold text-lg mt-1">
-                          <span>SISA KURANG:</span>
-                          <span>{(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
-                        </div>
+                  <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
+                    <span>Total:</span>
+                    <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                  </div>
+                  {receiptData.paymentStatus === 'DP' && (
+                    <div className="border-t border-black border-dashed mt-1 pt-1">
+                      <div className="flex justify-between py-0.5 font-bold">
+                        <span>Tunai / DP:</span>
+                        <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="flex justify-between py-0.5 font-bold text-xs">
+                        <span>SISA KURANG:</span>
+                        <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
-                
-                <div className="clear-both"></div>
-
-              <div className="text-center text-[10px] mt-8 pt-4 border-t border-dashed border-gray-300 print:hidden text-gray-500">
-                <p>Format Struk NCR 1/2 Folio. Setel ukuran kertas: 215mm x 140mm pada pengaturan printer (Ctrl+P).</p>
+              </div>
+              
+              <div className="clear-both"></div>
+              <div className="text-center text-[10px] mt-6 pt-3 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK NCR (9.5" x 11" : 2 / Bagi 2):</p>
+                <p>1. Ukuran Kertas: Pilih <b>User Defined (215mm x 140mm)</b> atau <b>Statement / Half Letter</b>.</p>
+                <p>2. Margin: Pilih <b>"None" (Nol)</b> atau <b>"Minimum"</b>.</p>
+                <p>3. <b>Hapus centang (uncheck) "Header & Footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
               </div>
             </div>
           </div>
