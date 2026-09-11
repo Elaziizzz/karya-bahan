@@ -718,79 +718,80 @@ export default function POSDashboard() {
               </button>
             </div>
             
-            {/* Receipt Content NCR 2-ply Style (Fit for 9.5" x 11" : 2 / 185mm safe printable width) */}
-            <div className="text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[10px] leading-tight">
-              <div className="flex justify-between items-start mb-3">
-                <div className="max-w-[75mm]">
-                  <h2 className="text-sm font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                  <p className="mt-1">Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                  <p>Telp: {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
-                  <p>Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
+            {/* Receipt Content NCR 2-ply Style (Clear, readable font, well-spaced & lowered signature) */}
+            <div className="text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[12px] leading-normal tracking-wide">
+              <div className="flex justify-between items-start mb-4">
+                <div className="max-w-[80mm] space-y-0.5">
+                  <h2 className="text-[14px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                  <p className="text-[11px]">Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
+                  <p className="text-[11px]">Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                  <p className="text-[11px] pt-1">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                 </div>
-                <div className="text-center">
-                  <h1 className="text-lg font-bold tracking-[0.3em]">FAKTUR</h1>
-                  <div className="text-[10px] mt-0.5">Hal : 1</div>
+                <div className="text-center pt-1">
+                  <h1 className="text-xl font-bold tracking-[0.35em]">FAKTUR</h1>
+                  <div className="text-[11px] mt-1">Hal : 1</div>
                 </div>
-                <div className="text-right text-[10px]">
-                  <div>Tanggal: {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
+                <div className="text-right text-[11px] space-y-1">
+                  <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                   <div>No. Faktur: {receiptData.invoiceNo}</div>
-                  <div>Kasir: Admin</div>
+                  <div>Kasir     : Admin</div>
                 </div>
               </div>
               
-              <table className="w-full text-left mb-2 border-collapse text-[10px]">
+              <table className="w-full text-left mb-2 border-collapse text-[11px] tracking-wide">
                 <thead>
                   <tr className="border-t border-b border-black border-dashed">
-                    <th className="py-1 font-bold w-8 text-center">NO.</th>
-                    <th className="py-1 font-bold">NAMA BARANG</th>
-                    <th className="py-1 font-bold text-right w-20">QTY</th>
-                    <th className="py-1 font-bold text-right w-24">HARGA</th>
-                    <th className="py-1 font-bold text-right w-28">JUMLAH</th>
+                    <th className="py-1.5 font-bold w-10 text-center">NO.</th>
+                    <th className="py-1.5 font-bold">NAMA BARANG</th>
+                    <th className="py-1.5 font-bold text-right w-24">QTY</th>
+                    <th className="py-1.5 font-bold text-right w-28">HARGA</th>
+                    <th className="py-1.5 font-bold text-right w-32">JUMLAH</th>
                   </tr>
                 </thead>
                 <tbody>
                   {receiptData.items.map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="py-0.5 text-center align-top">{idx + 1}</td>
-                      <td className="py-0.5 align-top">
+                    <tr key={idx} className="border-b border-dashed border-gray-200 print:border-none">
+                      <td className="py-1.5 text-center align-top">{idx + 1}</td>
+                      <td className="py-1.5 align-top">
                         {item.material.code ? `[${item.material.code}] ` : ''}
                         {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
                       </td>
-                      <td className="py-0.5 text-right align-top">
+                      <td className="py-1.5 text-right align-top whitespace-nowrap">
                         {item.display_quantity} {item.display_unit.toUpperCase()}
                       </td>
-                      <td className="py-0.5 text-right align-top">{item.display_price.toLocaleString("id-ID")}</td>
-                      <td className="py-0.5 text-right align-top font-bold">{item.subtotal.toLocaleString("id-ID")}</td>
+                      <td className="py-1.5 text-right align-top whitespace-nowrap">{item.display_price.toLocaleString("id-ID")}</td>
+                      <td className="py-1.5 text-right align-top font-bold whitespace-nowrap">{item.subtotal.toLocaleString("id-ID")}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               
-              <div className="border-t border-black border-dashed pt-2 flex justify-between items-start text-[10px]">
-                <div className="text-center w-28">
-                  <p className="mb-10">Tanda Terima</p>
-                  <p>(...................)</p>
+              {/* Signature & Totals Section - Moved down with mt-10 and spacious signature gaps */}
+              <div className="border-t border-black border-dashed pt-4 mt-8 flex justify-between items-start text-[11px] tracking-wide">
+                <div className="text-center w-32">
+                  <p className="mb-14 font-medium">Tanda Terima</p>
+                  <p>( ........................ )</p>
                 </div>
-                <div className="text-center w-28">
-                  <p className="mb-10">Hormat Kami</p>
-                  <p>(...................)</p>
+                <div className="text-center w-32">
+                  <p className="mb-14 font-medium">Hormat Kami</p>
+                  <p>( ........................ )</p>
                 </div>
-                <div className="w-56 text-right">
-                  <div className="flex justify-between py-0.5">
+                <div className="w-60 text-right">
+                  <div className="flex justify-between py-1">
                     <span>Sub Total:</span>
-                    <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                    <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
-                  <div className="flex justify-between py-0.5 font-bold border-t border-dashed border-gray-400">
+                  <div className="flex justify-between py-1 font-bold border-t border-dashed border-gray-400">
                     <span>Total:</span>
                     <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
                   {receiptData.paymentStatus === 'DP' && (
                     <div className="border-t border-black border-dashed mt-1 pt-1">
-                      <div className="flex justify-between py-0.5 font-bold">
+                      <div className="flex justify-between py-1 font-bold">
                         <span>Tunai / DP:</span>
                         <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                       </div>
-                      <div className="flex justify-between py-0.5 font-bold text-xs">
+                      <div className="flex justify-between py-1 font-bold text-xs mt-1">
                         <span>SISA KURANG:</span>
                         <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                       </div>
@@ -800,11 +801,11 @@ export default function POSDashboard() {
               </div>
               
               <div className="clear-both"></div>
-              <div className="text-center text-[10px] mt-6 pt-3 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
-                <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK NCR (9.5" x 11" : 2 / Bagi 2):</p>
-                <p>1. Ukuran Kertas: Pilih <b>User Defined (215mm x 140mm)</b> atau <b>Statement / Half Letter</b>.</p>
-                <p>2. Margin: Pilih <b>"None" (Nol)</b> atau <b>"Minimum"</b>.</p>
-                <p>3. <b>Hapus centang (uncheck) "Header & Footer"</b> agar link website tidak mencetak di pinggir kertas.</p>
+              <div className="text-center text-[11px] mt-6 pt-3 border-t border-dashed border-gray-300 print:hidden text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+                <p className="font-bold text-blue-900 mb-1">PETUNJUK CETAK STRUK NCR (9.5" x 11" : 2 / Setengah Lembar):</p>
+                <p>1. Margin: Pilih <b>"Tidak ada" (None)</b> atau <b>"Minimum"</b>.</p>
+                <p>2. <b>Pastikan centang "Header dan footer" TIDAK DICENTANG (KOSONG)</b> agar tidak menghalangi nota.</p>
+                <p>3. Ukuran Kertas: Pilih <b>Struk Bagi 2</b> (atau <b>Letter</b>).</p>
               </div>
             </div>
           </div>
