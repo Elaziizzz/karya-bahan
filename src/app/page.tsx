@@ -718,27 +718,27 @@ export default function POSDashboard() {
               </button>
             </div>
             
-            {/* Receipt Content NCR 2-ply Style (Clear, readable font, well-spaced & lowered signature) */}
+            {/* Receipt Content NCR 2-ply Style (Clear, larger font 12px-15px, well-spaced & dot matrix optimized) */}
             <div className="text-black font-mono print:font-mono w-full max-w-[185mm] mx-auto text-[12px] leading-normal tracking-wide">
               <div className="flex justify-between items-start mb-4">
-                <div className="max-w-[80mm] space-y-0.5">
-                  <h2 className="text-[14px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                  <p className="text-[11px]">Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                  <p className="text-[11px]">Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
-                  <p className="text-[11px] pt-1">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
+                <div className="max-w-[85mm] space-y-0.5">
+                  <h2 className="text-[15px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
+                  <p className="text-[12px]">Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
+                  <p className="text-[12px]">Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                  <p className="text-[12px] pt-1">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                 </div>
                 <div className="text-center pt-1">
-                  <h1 className="text-xl font-bold tracking-[0.35em]">FAKTUR</h1>
-                  <div className="text-[11px] mt-1">Hal : 1</div>
+                  <h1 className="text-2xl font-bold tracking-[0.35em]">FAKTUR</h1>
+                  <div className="text-[12px] mt-1">Hal : 1</div>
                 </div>
-                <div className="text-right text-[11px] space-y-1">
+                <div className="text-right text-[12px] space-y-1">
                   <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                   <div>No. Faktur: {receiptData.invoiceNo}</div>
                   <div>Kasir     : Admin</div>
                 </div>
               </div>
               
-              <table className="w-full text-left mb-2 border-collapse text-[11px] tracking-wide">
+              <table className="w-full text-left mb-2 border-collapse text-[12px] tracking-wide">
                 <thead>
                   <tr className="border-t border-b border-black border-dashed">
                     <th className="py-1.5 font-bold w-10 text-center">NO.</th>
@@ -767,23 +767,23 @@ export default function POSDashboard() {
               </table>
               
               {/* Signature & Totals Section - Moved down with mt-8 and guaranteed single-line signature brackets */}
-              <div className="border-t border-black border-dashed pt-4 mt-8 flex justify-between items-start text-[11px] tracking-wide">
-                <div className="text-center w-36">
+              <div className="border-t border-black border-dashed pt-4 mt-8 flex justify-between items-start text-[12px] tracking-wide">
+                <div className="text-center w-40">
                   <p className="mb-14 font-medium">Tanda Terima</p>
-                  <p className="whitespace-nowrap font-mono tracking-normal text-[11px]">(....................)</p>
+                  <p className="whitespace-nowrap font-mono tracking-normal text-[12px]">(....................)</p>
                 </div>
-                <div className="text-center w-36">
+                <div className="text-center w-40">
                   <p className="mb-14 font-medium">Hormat Kami</p>
-                  <p className="whitespace-nowrap font-mono tracking-normal text-[11px]">(....................)</p>
+                  <p className="whitespace-nowrap font-mono tracking-normal text-[12px]">(....................)</p>
                 </div>
-                <div className="w-60 text-right">
+                <div className="w-64 text-right">
                   <div className="flex justify-between py-1">
                     <span>Sub Total:</span>
                     <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
                   <div className="flex justify-between py-1 font-bold border-t border-dashed border-gray-400">
                     <span>Total:</span>
-                    <span>Rp {receiptData.total.toLocaleString("id-ID")}</span>
+                    <span className="text-[13px]">Rp {receiptData.total.toLocaleString("id-ID")}</span>
                   </div>
                   {receiptData.paymentStatus === 'DP' && (
                     <div className="border-t border-black border-dashed mt-1 pt-1">
@@ -791,7 +791,7 @@ export default function POSDashboard() {
                         <span>Tunai / DP:</span>
                         <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                       </div>
-                      <div className="flex justify-between py-1 font-bold text-xs mt-1">
+                      <div className="flex justify-between py-1 font-bold text-sm mt-1">
                         <span>SISA KURANG:</span>
                         <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                       </div>
