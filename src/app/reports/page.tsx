@@ -264,7 +264,7 @@ export default function ReportsPage() {
       const rowData = [
         format((t.created_at ? new Date(t.created_at) : new Date(0)), "dd MMM yyyy HH:mm"),
         typeStr,
-        (t.materials?.code ? `"[${t.materials.code}] "` + t.materials.name : (t.materials?.name || "Unknown")),
+        (t.materials?.code ? `"${t.materials.name} [${t.materials.code}]"` : (t.materials?.name || "Unknown")),
         t.quantity.toString(),
         modalPcsStr,
         jualPcsStr,
@@ -714,7 +714,7 @@ export default function ReportsPage() {
                     groupedTransactions.map((g, idx) => {
                       const isOut = g.type === 'OUT';
                       const profit = isOut ? (g.total_price - g.cost_price) : 0;
-                      const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim() || 'Barang'}`).join(', ');
+                      const materialText = g.items.map((i: any) => `${i.quantity}x ${i.materials?.name?.replace(/-\s*\[.*?\]$/, '').trim() || 'Barang'}${i.materials?.code ? ` [${i.materials.code}]` : ''}`).join(', ');
                       
                       return (
                         <tr key={g.timeKey + g.type} className={`border-b-2 border-gray-300 transition-colors ${isOut ? 'bg-blue-50/30 hover:bg-blue-50' : 'bg-red-50/30 hover:bg-red-50'}`}>

@@ -394,13 +394,13 @@ export default function MaterialsPage() {
               </h2>
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-1">
-                    <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Ops)</label>
-                    <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
-                  </div>
                   <div className="col-span-2">
                     <label className="block text-xs font-bold mb-1 uppercase">Nama Material</label>
                     <input type="text" required className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Semen, PVC..." />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-xs font-bold mb-1 uppercase">Kode Barang (Ops)</label>
+                    <input type="text" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.code} onChange={(e) => setFormData({...formData, code: e.target.value})} placeholder="B001" />
                   </div>
                 </div>
 
@@ -640,8 +640,8 @@ export default function MaterialsPage() {
                       <thead className="sticky top-0 bg-black text-white uppercase tracking-wide text-xs z-10 border-b border-gray-300">
                         <tr>
                           <th className="p-2 w-10 text-center">Sts</th>
-                          <th className="p-2">Kode</th>
                           <th className="p-2 min-w-[200px]">Nama Barang</th>
+                          <th className="p-2">Kode</th>
                           <th className="p-2 w-24">Stok</th>
                           <th className="p-2 w-32">H. Modal</th>
                           <th className="p-2 w-32">H. Jual</th>
@@ -657,10 +657,10 @@ export default function MaterialsPage() {
                               {row.status === 'error' && <span title={row.statusMessage}><XCircle className="w-4 h-4 text-red-500 mx-auto" /></span>}
                             </td>
                             <td className="p-1 border-r border-gray-200">
-                              <input type="text" value={row.code} onChange={(e) => updatePreviewRow(row.id, 'code', e.target.value)} className="w-full px-2 py-1.5 text-xs font-mono border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent" placeholder="Kode" />
+                              <input type="text" value={row.name} onChange={(e) => updatePreviewRow(row.id, 'name', e.target.value)} className={`w-full px-2 py-1.5 text-xs font-bold border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent ${!row.name ? 'border-red-300 bg-red-100/50' : ''}`} placeholder="Nama Barang" />
                             </td>
                             <td className="p-1 border-r border-gray-200">
-                              <input type="text" value={row.name} onChange={(e) => updatePreviewRow(row.id, 'name', e.target.value)} className={`w-full px-2 py-1.5 text-xs font-bold border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent ${!row.name ? 'border-red-300 bg-red-100/50' : ''}`} placeholder="Nama Barang" />
+                              <input type="text" value={row.code} onChange={(e) => updatePreviewRow(row.id, 'code', e.target.value)} className="w-full px-2 py-1.5 text-xs font-mono border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent" placeholder="Kode" />
                             </td>
                             <td className="p-1 border-r border-gray-200">
                               <input type="number" value={row.stock} onChange={(e) => updatePreviewRow(row.id, 'stock', Number(e.target.value))} className="w-full px-2 py-1.5 text-xs border border-transparent hover:border-gray-300 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-swiss bg-transparent font-mono text-right" />
@@ -731,8 +731,8 @@ export default function MaterialsPage() {
         <table className="w-full text-left text-sm whitespace-nowrap">
           <thead>
             <tr className="bg-black text-white uppercase text-xs tracking-wide">
-              <th className="p-4 border-r border-gray-700">Kode</th>
               <th className="p-4 border-r border-gray-700">Nama Barang</th>
+              <th className="p-4 border-r border-gray-700">Kode</th>
               <th className="p-4 text-right border-r border-gray-700">Stok</th>
               <th className="p-4 text-right border-r border-gray-700 whitespace-nowrap">H. Modal (Pcs/Dus)</th>
               <th className="p-4 text-right border-r border-gray-700 text-green-400 whitespace-nowrap">H. Jual (Pcs/Dus)</th>
@@ -761,18 +761,17 @@ export default function MaterialsPage() {
               </tr>
             ) : filteredMaterials.map((item) => (
               <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition-swiss group">
-                <td className="p-4 border-r border-gray-200 font-mono text-xs">{item.code || "-"}</td>
                 <td className="p-4 border-r border-gray-200 group-hover:text-blue-600 transition-colors">
                     <div className="flex flex-col gap-1 items-start">
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold">
+                          {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
+                        </span>
                         {item.code && (
                           <span className="text-[11px] font-mono bg-gray-100 text-gray-800 border border-black px-1.5 py-0.5 rounded font-bold">
                             {item.code}
                           </span>
                         )}
-                        <span className="font-bold">
-                          {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
-                        </span>
                       </div>
                       {item.name.match(/\s*=\s*\((.*?)\)$/) && (
                         <span className="text-[10px] bg-yellow-200 text-yellow-900 border border-yellow-400 px-2 py-0.5 font-bold uppercase rounded-sm shadow-sm inline-flex items-center gap-1">
@@ -781,6 +780,7 @@ export default function MaterialsPage() {
                       )}
                     </div>
                   </td>
+                <td className="p-4 border-r border-gray-200 font-mono text-xs">{item.code || "-"}</td>
                 <td className="p-4 border-r border-gray-200 text-right font-mono">
                   <span className={`${item.current_stock <= 0 ? 'text-red-600 bg-red-50 px-2 py-1 font-bold text-xs' : ''}`}>
                     {item.current_stock} {item.current_stock <= 0 && '(Habis)'}

@@ -783,7 +783,7 @@ export default function POSDashboard() {
   const selectMaterial = (m: Material) => {
     if (m.current_stock <= 0) { showToast("Stok barang ini kosong (0)! Silakan restok dulu.", "error"); return; }
     setSelectedMaterialId(m.id);
-    setSearchQuery(m.code ? `[${m.code}] ${displayMaterialName(m.name)}` : displayMaterialName(m.name));
+    setSearchQuery(m.code ? `${displayMaterialName(m.name)} [${m.code}]` : displayMaterialName(m.name));
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
     setBuyMode('ecer');
@@ -894,8 +894,8 @@ export default function POSDashboard() {
                             <tr key={idx} className="border-b border-gray-100 print:border-none">
                               <td className="py-1 text-center align-top">{pageIdx * ITEMS_PER_PAGE + idx + 1}</td>
                               <td className="py-1 align-top">
-                                {item.material.code ? `[${item.material.code}] ` : ''}
                                 {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
+                                {item.material.code ? ` [${item.material.code}]` : ''}
                               </td>
                               <td className="py-1 text-right align-top whitespace-nowrap">
                                 {item.display_quantity} {item.display_unit.toUpperCase()}
@@ -1042,8 +1042,8 @@ export default function POSDashboard() {
                             onMouseEnter={() => !isOutOfStock && setHighlightedIndex(index)}
                           >
                             <div className="flex items-center gap-2">
-                              {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
                               <span className={isOutOfStock ? 'line-through text-gray-500' : ''}>{displayMaterialName(m.name)}</span>
+                              {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
                               {isOutOfStock && <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded shadow-sm">HABIS</span>}
                             </div>
                             <div className={`text-xs font-mono ${isOutOfStock ? 'text-red-600 font-bold' : 'text-gray-500'}`}>Stock: {m.current_stock}</div>
@@ -1145,8 +1145,8 @@ export default function POSDashboard() {
                         <tr key={index} className="hover:bg-gray-50 border-b border-gray-200">
                           <td className="p-3 text-center">{index + 1}</td>
                           <td className="p-3 font-medium">
-                            {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{item.material.code}</span>}
                             {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
+                            {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded ml-2 border border-black">{item.material.code}</span>}
                           </td>
                           <td className="p-3 text-right font-mono">
                               <div className="text-lg">{item.display_quantity} <span className="text-xs text-gray-500">{item.display_unit}</span></div>
@@ -1482,8 +1482,8 @@ export default function POSDashboard() {
                               {items.map((item, itemIdx) => (
                                 <tr key={item.id} className={`${itemIdx !== items.length - 1 ? 'border-b border-gray-200' : ''} hover:bg-gray-50`}>
                                   <td className="p-3 font-bold text-gray-800">
-                                    {item.materials?.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-black">[{item.materials.code}]</span>}
                                     {displayMaterialName(item.materials?.name)}
+                                    {item.materials?.code && <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded ml-2 border border-black">[{item.materials.code}]</span>}
                                   </td>
                                   <td className="p-3 text-center w-24 font-mono">{item.quantity} x</td>
                                   <td className="p-3 text-right text-green-700 font-bold font-mono w-32">Rp {item.total_price.toLocaleString("id-ID")}</td>

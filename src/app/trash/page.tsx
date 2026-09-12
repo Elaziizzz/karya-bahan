@@ -449,12 +449,12 @@ export default function TrashPage() {
                                 <tr key={item.id} className={`${itemIdx !== nota.items.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-red-50/40 transition-colors`}>
                                   <td className="py-2 px-3 text-center text-gray-500 font-mono">{itemIdx + 1}</td>
                                   <td className="py-2 px-3 font-semibold text-gray-800">
+                                    {displayMaterialName(item.materials?.name)}
                                     {item.materials?.code && (
-                                      <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded mr-2 border border-gray-400">
+                                      <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded ml-2 border border-gray-400">
                                         [{item.materials.code}]
                                       </span>
                                     )}
-                                    {displayMaterialName(item.materials?.name)}
                                     {investor && (
                                       <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded border border-amber-300 font-normal">
                                         {investor}

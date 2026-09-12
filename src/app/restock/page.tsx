@@ -97,7 +97,7 @@ export default function RestockPage() {
   async function fetchRecentRestocks() {
     const { data } = await supabase
       .from("transactions")
-      .select("*, materials(name)")
+      .select("*, materials(name, code)")
       .eq("store", activeStore)
       .eq("type", "IN")
       .is("deleted_at", null)
@@ -118,7 +118,7 @@ export default function RestockPage() {
 
   const selectMaterial = (m: Material) => {
     setSelectedMaterialId(m.id);
-    setSearchQuery(m.code ? `[${m.code}] ${m.name}` : m.name);
+    setSearchQuery(m.code ? `${m.name} [${m.code}]` : m.name);
     setIsDropdownOpen(false);
     setHighlightedIndex(-1);
     setTimeout(() => qtyInputRef.current?.focus(), 50);
@@ -275,9 +275,9 @@ export default function RestockPage() {
                           }}
                           onMouseEnter={() => setHighlightedIndex(index)}
                         >
-                          <div>
-                            {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded mr-2 border border-black">{m.code}</span>}
+                          <div className="flex items-center gap-2">
                             <span>{m.name}</span>
+                            {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
                           </div>
                           <div className="text-xs text-gray-500 font-mono">Stok: {m.current_stock}</div>
                         </div>
@@ -413,6 +413,11 @@ export default function RestockPage() {
                         </td>
                         <td className="p-3 font-medium">
                           {t.materials?.name || "Unknown"}
+                          {t.materials?.code && (
+                            <span className="text-xs font-mono bg-gray-200 px-1 py-0.5 rounded ml-2 border border-black">
+                              [{t.materials.code}]
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-right font-mono">
                           {t.quantity}
