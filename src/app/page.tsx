@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X, BarChart2 } from "lucide-react";
+import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X, BarChart2, Search, Clock, Edit2, User, Phone } from "lucide-react";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { subDays } from "date-fns";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -80,6 +80,9 @@ export default function POSDashboard() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { showToast } = useToast();
 
+  const [recentFilter, setRecentFilter] = useState<'TODAY' | 'YESTERDAY' | 'WEEK' | 'ALL'>('TODAY');
+  const [searchRecentQuery, setSearchRecentQuery] = useState("");
+
   const [receiptData, setReceiptData] = useState<{
     invoiceNo: string;
     date: Date;
@@ -130,6 +133,29 @@ export default function POSDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : 'bysca_edit_cart';
+    const pending = localStorage.getItem(editKey);
+    if (pending) {
+      try {
+        const data = JSON.parse(pending);
+        if (data && data.cart && data.cart.length > 0) {
+          setCart(data.cart);
+          if (data.customerName) setCustomerName(data.customerName);
+          if (data.customerPhone) setCustomerPhone(data.customerPhone);
+          if (data.paymentStatus) setPaymentMode(data.paymentStatus);
+          if (data.dpAmount) setDpAmount(String(data.dpAmount));
+          if (data.transactionDate) setTransactionDate(data.transactionDate);
+          showToast("Nota berhasil dimuat ke Keranjang Kasir untuk diedit!", "success");
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        localStorage.removeItem(editKey);
+      }
+    }
+  }, [materials]);
+
 
 
   async function fetchData(store: string) {
@@ -154,8 +180,8 @@ export default function POSDashboard() {
       .eq("store", store)
       .eq("type", "OUT")
       .is("deleted_at", null)
-      .gte("created_at", new Date(new Date().setHours(0,0,0,0)).toISOString())
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(300);
     if (recent) setTransactions(recent);
 
     // Fetch ALL unpaid transactions for Pelunasan
@@ -250,6 +276,47 @@ export default function POSDashboard() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
 
+  const filteredRecentNotas = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+    const sevenDaysAgo = subDays(new Date(), 7);
+
+    const grouped = transactions.reduce((acc, t) => {
+      const key = t.created_at;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(t);
+      return acc;
+    }, {} as Record<string, Transaction[]>);
+
+    let notas = Object.entries(grouped).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+
+    if (recentFilter === 'TODAY') {
+      notas = notas.filter(([time]) => format(new Date(time), 'yyyy-MM-dd') === todayStr);
+    } else if (recentFilter === 'YESTERDAY') {
+      notas = notas.filter(([time]) => format(new Date(time), 'yyyy-MM-dd') === yesterdayStr);
+    } else if (recentFilter === 'WEEK') {
+      notas = notas.filter(([time]) => new Date(time) >= sevenDaysAgo);
+    }
+
+    if (searchRecentQuery.trim()) {
+      const q = searchRecentQuery.toLowerCase().trim();
+      notas = notas.filter(([time, items]) => {
+        const custName = (items[0]?.customer_name || '').toLowerCase();
+        const custPhone = (items[0]?.customer_phone || '').toLowerCase();
+        const invoiceId = `kb-${new Date(time).getTime()}`;
+        const hasMat = items.some(i => 
+          (i.materials?.name && i.materials.name.toLowerCase().includes(q)) ||
+          (i.materials?.code && i.materials.code.toLowerCase().includes(q))
+        );
+        return custName.includes(q) || custPhone.includes(q) || invoiceId.includes(q) || hasMat;
+      });
+    }
+
+    return notas;
+  }, [transactions, recentFilter, searchRecentQuery]);
+
   
   async function editFullNota(items: Transaction[]) {
     if (!confirm("Edit Nota ini? Seluruh barang di nota ini akan dipindah kembali ke Keranjang, dan nota asli akan dihapus dari riwayat (Stock akan dikembalikan).")) return;
@@ -307,6 +374,20 @@ export default function POSDashboard() {
     }
 
     setCart(newCart);
+
+    if (items[0]?.customer_name && items[0].customer_name !== '-') {
+      setCustomerName(items[0].customer_name);
+    }
+    if (items[0]?.customer_phone && items[0].customer_phone !== '-') {
+      setCustomerPhone(items[0].customer_phone);
+    }
+    if (items[0]?.payment_status === 'DP') {
+      setPaymentMode('DP');
+      setDpAmount(String(items[0].dp_amount || ''));
+    } else {
+      setPaymentMode('LUNAS');
+      setDpAmount('');
+    }
     
     ids.forEach(id => {
       fetch('/api/sheets/sync', {
@@ -942,6 +1023,9 @@ export default function POSDashboard() {
                           )}
                         </div>
                       </div>
+                      <div className="text-[10px] text-gray-600 print:text-black text-center mt-1 select-none border-t border-gray-200 print:border-gray-300 pt-0.5 tracking-tight font-sans">
+                        *Barang yang sudah dibeli tidak bisa dikembalikan*
+                      </div>
                     </div>
                   </div>
                 );
@@ -1334,6 +1418,33 @@ export default function POSDashboard() {
                         >
                           {loading ? "MEMPROSES..." : "PROSES PEMBAYARAN PELUNASAN"}
                         </button>
+
+                        <div className="pt-3 border-t border-dashed border-gray-300 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => printNotaStruk(selectedDebt.items, selectedDebt.created_at, selectedDebt.totalAmount)}
+                            className="flex-1 bg-gray-800 hover:bg-black text-white py-2.5 px-3 font-bold text-xs uppercase rounded transition-colors flex items-center justify-center gap-1.5 border border-black shadow-sm"
+                            title="Cetak struk nota hutang ini"
+                          >
+                            <Printer className="w-4 h-4" /> Cetak Struk
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => editFullNota(selectedDebt.items)}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-3 font-bold text-xs uppercase rounded transition-colors flex items-center justify-center gap-1.5 border border-blue-800 shadow-sm"
+                            title="Edit barang/harga/customer nota hutang ini di kasir"
+                          >
+                            <Edit2 className="w-4 h-4" /> Edit Nota
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteFullNota(selectedDebt.items)}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 px-3 font-bold text-xs uppercase rounded transition-colors flex items-center justify-center gap-1.5 border border-red-800 shadow-sm"
+                            title="Hapus nota hutang ini dan kembalikan stok barang ke etalase"
+                          >
+                            <Trash2 className="w-4 h-4" /> Hapus Nota
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1422,37 +1533,93 @@ export default function POSDashboard() {
 
         {/* Recent Transactions */}
         <div>
-          <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2">
-            RECENT TRANSACTIONS
-          </h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b-2 border-black pb-3">
+            <div>
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Clock className="w-6 h-6" />
+                RIWAYAT TRANSAKSI
+              </h2>
+              <p className="text-xs text-gray-500">Daftar nota transaksi kasir. Nota kemarin atau yang lalu bisa dicari, diedit, atau dihapus.</p>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Filter Range */}
+              <div className="inline-flex border-2 border-black bg-white p-0.5 text-xs font-bold shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setRecentFilter('TODAY')}
+                  className={`px-3 py-1.5 transition-colors ${recentFilter === 'TODAY' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                >
+                  Hari Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecentFilter('YESTERDAY')}
+                  className={`px-3 py-1.5 transition-colors ${recentFilter === 'YESTERDAY' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                >
+                  Kemarin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecentFilter('WEEK')}
+                  className={`px-3 py-1.5 transition-colors ${recentFilter === 'WEEK' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                >
+                  7 Hari
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecentFilter('ALL')}
+                  className={`px-3 py-1.5 transition-colors ${recentFilter === 'ALL' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+                >
+                  Semua
+                </button>
+              </div>
+
+              {/* Search Box */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari customer, no nota, barang..."
+                  value={searchRecentQuery}
+                  onChange={(e) => setSearchRecentQuery(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs font-bold border-2 border-black bg-white focus:outline-none focus:ring-2 focus:ring-black"
+                />
+                {searchRecentQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchRecentQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-x-auto border border-black bg-white">
+            <div className="flex flex-col gap-4 bg-gray-100 p-4">
+              {(() => {
+                if (filteredRecentNotas.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-gray-500 italic border border-black bg-white">
+                      {searchRecentQuery ? "Tidak ada transaksi yang cocok dengan pencarian." : "Belum ada transaksi di periode ini."}
+                    </div>
+                  );
+                }
 
-              <div className="flex flex-col gap-4 bg-gray-100 p-4">
-                {(() => {
-                  const grouped = transactions.reduce((acc, t) => {
-                    const key = t.created_at;
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(t);
-                    return acc;
-                  }, {} as Record<string, Transaction[]>);
-                  
-                  const notas = Object.entries(grouped).sort((a,b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
-                  
-                  if (notas.length === 0) {
-                    return <div className="p-8 text-center text-gray-500 italic border border-black bg-white">Belum ada transaksi hari ini.</div>;
-                  }
-
-                  return notas.map(([time, items], idx) => {
+                return filteredRecentNotas.map(([time, items], idx) => {
                       const totalNota = items.reduce((sum, i) => sum + (i.total_price || 0), 0);
                       return (
                         <div key={time} className="border-2 border-black bg-white overflow-hidden shadow-sm">
                           <div className="bg-black text-white p-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-2 font-mono">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white text-black px-2 py-0.5 font-black text-xs">NOTA #{notas.length - idx}</span>
-                              <span className="text-sm">{format(new Date(time), "HH:mm")}</span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="bg-white text-black px-2 py-0.5 font-black text-xs">NOTA #{filteredRecentNotas.length - idx}</span>
+                              <span className="text-xs text-gray-200 font-mono">{format(new Date(time), "dd MMM yyyy, HH:mm")}</span>
                               {items[0]?.customer_name && items[0]?.customer_name !== '-' && (
-                                <span className="bg-blue-600 text-white px-2 py-0.5 text-xs font-bold rounded">
-                                  ?? {items[0].customer_name}
+                                <span className="bg-blue-600 text-white px-2 py-0.5 text-xs font-bold rounded inline-flex items-center gap-1">
+                                  <User className="w-3 h-3" /> {items[0].customer_name}
                                 </span>
                               )}
                             </div>
