@@ -1023,8 +1023,13 @@ export default function POSDashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="text-[10px] text-gray-600 print:text-black text-center mt-1 select-none border-t border-gray-200 print:border-gray-300 pt-0.5 tracking-tight font-sans">
-                        *Barang yang sudah dibeli tidak bisa dikembalikan*
+                      <div className="text-center mt-1 select-none border-t border-gray-300 print:border-black pt-1 leading-tight">
+                        <div className="text-[12px] font-bold text-black uppercase tracking-wider">
+                          Terima Kasih Atas Kunjungannya
+                        </div>
+                        <div className="text-[11px] font-bold text-black tracking-tight mt-0.5">
+                          *Barang yang sudah dibeli tidak bisa dikembalikan*
+                        </div>
                       </div>
                     </div>
                   </div>
