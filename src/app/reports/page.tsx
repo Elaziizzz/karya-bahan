@@ -121,7 +121,7 @@ export default function ReportsPage() {
     // Fetch Transactions
     const { data: trx } = await supabase
       .from("transactions")
-      .select("*, materials(name, code)")
+      .select("*, materials(name, code, deleted_at)")
       .eq("store", store)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -395,11 +395,19 @@ export default function ReportsPage() {
   const investors = useMemo(() => {
     const list = new Set<string>();
     allTransactions.forEach((t: any) => {
-      const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
-      if (im) list.add(im[1].trim());
+      if (t.materials && !t.materials.deleted_at) {
+        const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+        if (im) list.add(im[1].trim());
+      }
+    });
+    materials.forEach((m: any) => {
+      if (!m.deleted_at) {
+        const im = m.name?.match(/\s*=\s*\((.*?)\)$/);
+        if (im) list.add(im[1].trim());
+      }
     });
     return Array.from(list).sort();
-  }, [allTransactions]);
+  }, [allTransactions, materials]);
 
   const filteredTransactions = useMemo(() => {
     const today = new Date();
@@ -421,6 +429,7 @@ export default function ReportsPage() {
 
     if (selectedInvestor !== "Semua") {
       result = result.filter((t: any) => {
+        if (t.materials?.deleted_at) return false;
         const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
         return im && im[1].trim() === selectedInvestor;
       });

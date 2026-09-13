@@ -1,9 +1,9 @@
 "use client";
 import { createPortal } from "react-dom";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Package, User, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
+import { Package, User, Users, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -47,6 +47,116 @@ export default function MaterialsPage() {
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Investor Management State
+  const [selectedInvestorFilter, setSelectedInvestorFilter] = useState<string>("ALL");
+  const [isInvestorModalOpen, setIsInvestorModalOpen] = useState(false);
+  const [editingInvestor, setEditingInvestor] = useState<{ original: string; newName: string } | null>(null);
+  const [isProcessingInvestor, setIsProcessingInvestor] = useState(false);
+
+  // Investor Stats from active materials
+  const investorsStats = useMemo(() => {
+    const map = new Map<string, { count: number; totalStock: number; totalAssetCost: number; totalAssetPrice: number }>();
+    materials.forEach(m => {
+      const match = m.name.match(/\s*=\s*\((.*?)\)$/);
+      if (match) {
+        const inv = match[1].trim();
+        const existing = map.get(inv) || { count: 0, totalStock: 0, totalAssetCost: 0, totalAssetPrice: 0 };
+        existing.count += 1;
+        existing.totalStock += m.current_stock || 0;
+        existing.totalAssetCost += (m.current_stock || 0) * (m.cost_price || 0);
+        existing.totalAssetPrice += (m.current_stock || 0) * (m.price || 0);
+        map.set(inv, existing);
+      }
+    });
+    return Array.from(map.entries()).map(([name, stat]) => ({
+      name,
+      ...stat
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [materials]);
+
+  // Rename Investor across all associated materials
+  async function handleRenameInvestor(oldName: string, newNameRaw: string) {
+    const newName = newNameRaw.trim().toUpperCase();
+    if (!newName) {
+      showToast("Nama investor baru tidak boleh kosong!", "error");
+      return;
+    }
+    if (newName === oldName.toUpperCase()) {
+      showToast("Nama investor tidak berubah.", "info");
+      setEditingInvestor(null);
+      return;
+    }
+
+    const targetMaterials = materials.filter(m => {
+      const match = m.name.match(/\s*=\s*\((.*?)\)$/);
+      return match && match[1].trim().toUpperCase() === oldName.toUpperCase();
+    });
+
+    if (targetMaterials.length === 0) {
+      showToast(`Tidak ada barang yang terhubung dengan investor ${oldName}.`, "info");
+      return;
+    }
+
+    if (!confirm(`Ubah nama investor "${oldName}" menjadi "${newName}" untuk seluruh ${targetMaterials.length} barang terkait?`)) return;
+
+    setIsProcessingInvestor(true);
+    let successCount = 0;
+
+    try {
+      for (const mat of targetMaterials) {
+        const updatedName = mat.name.replace(/\s*=\s*\((.*?)\)$/, ` = (${newName})`);
+        const { error } = await supabase
+          .from("materials")
+          .update({ name: updatedName })
+          .eq("id", mat.id);
+        if (!error) successCount++;
+      }
+
+      showToast(`Berhasil mengubah nama investor "${oldName}" menjadi "${newName}" pada ${successCount} barang!`, "success");
+      setEditingInvestor(null);
+      if (selectedInvestorFilter === oldName) setSelectedInvestorFilter(newName);
+      await fetchMaterials(activeStore);
+    } catch (err: any) {
+      showToast("Gagal memperbarui investor: " + err.message, "error");
+    } finally {
+      setIsProcessingInvestor(false);
+    }
+  }
+
+  // Unlink Investor from all items (make them regular store items)
+  async function handleUnlinkInvestor(investorName: string) {
+    const targetMaterials = materials.filter(m => {
+      const match = m.name.match(/\s*=\s*\((.*?)\)$/);
+      return match && match[1].trim().toUpperCase() === investorName.toUpperCase();
+    });
+
+    if (targetMaterials.length === 0) return;
+
+    if (!confirm(`Lepaskan investor "${investorName}" dari ${targetMaterials.length} barang? Barang akan tetap ada di inventaris sebagai barang toko biasa tanpa investor.`)) return;
+
+    setIsProcessingInvestor(true);
+    let successCount = 0;
+
+    try {
+      for (const mat of targetMaterials) {
+        const updatedName = mat.name.replace(/\s*=\s*\((.*?)\)$/, "").trim();
+        const { error } = await supabase
+          .from("materials")
+          .update({ name: updatedName })
+          .eq("id", mat.id);
+        if (!error) successCount++;
+      }
+
+      showToast(`Berhasil melepaskan investor "${investorName}" dari ${successCount} barang!`, "success");
+      if (selectedInvestorFilter === investorName) setSelectedInvestorFilter("ALL");
+      await fetchMaterials(activeStore);
+    } catch (err: any) {
+      showToast("Gagal melepaskan investor: " + err.message, "error");
+    } finally {
+      setIsProcessingInvestor(false);
+    }
+  }
 
   function openAddModal() {
     setEditingId(null);
@@ -530,6 +640,174 @@ export default function MaterialsPage() {
             </div>
           </div>
         , document.body) : null}
+
+      {/* --- KELOLA INVESTOR MODAL --- */}
+      {isInvestorModalOpen && typeof document !== 'undefined' ? createPortal(
+        <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center p-4 z-50 overflow-y-auto py-10 animate-in fade-in duration-150">
+          <div className="bg-white p-6 max-w-4xl w-full border-2 border-black animate-in zoom-in-95 duration-200 shadow-2xl">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-6 h-6 text-black" />
+                <div>
+                  <h2 className="text-xl font-bold uppercase tracking-wide">Daftar & Pengelolaan Investor</h2>
+                  <p className="text-xs text-gray-600">Kelola pemilik barang konsinyasi/investor, ganti nama, atau lihat rincian aset.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => { setIsInvestorModalOpen(false); setEditingInvestor(null); }}
+                className="p-1.5 border border-black hover:bg-red-500 hover:text-white transition-colors"
+                title="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              <div className="border border-black p-3 bg-gray-50">
+                <div className="text-[11px] font-bold text-gray-500 uppercase">Total Investor Aktif</div>
+                <div className="text-2xl font-black mt-1">{investorsStats.length} Investor</div>
+              </div>
+              <div className="border border-black p-3 bg-yellow-50">
+                <div className="text-[11px] font-bold text-yellow-800 uppercase">Total Barang Terikat</div>
+                <div className="text-2xl font-black mt-1 text-yellow-900">
+                  {investorsStats.reduce((sum, i) => sum + i.count, 0)} Jenis
+                  <span className="text-xs font-normal text-gray-600 ml-1">({investorsStats.reduce((sum, i) => sum + i.totalStock, 0).toLocaleString("id-ID")} unit)</span>
+                </div>
+              </div>
+              <div className="border border-black p-3 bg-blue-50">
+                <div className="text-[11px] font-bold text-blue-800 uppercase">Total Nilai Modal Investor</div>
+                <div className="text-2xl font-black mt-1 text-blue-900">
+                  Rp {investorsStats.reduce((sum, i) => sum + i.totalAssetCost, 0).toLocaleString("id-ID")}
+                </div>
+              </div>
+            </div>
+
+            {/* Investor List Table */}
+            <div className="border border-black overflow-x-auto max-h-[50vh] overflow-y-auto mb-4">
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead className="bg-black text-white uppercase sticky top-0 z-10">
+                  <tr>
+                    <th className="p-3 border-r border-gray-700">Nama Investor</th>
+                    <th className="p-3 text-center border-r border-gray-700">Jumlah Barang</th>
+                    <th className="p-3 text-right border-r border-gray-700">Total Stok Fisik</th>
+                    <th className="p-3 text-right border-r border-gray-700">Total Modal (Aset)</th>
+                    <th className="p-3 text-right border-r border-gray-700">Potensi Omzet</th>
+                    <th className="p-3 text-center">Aksi & Pengaturan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {investorsStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-6 text-center text-gray-500 italic">
+                        Belum ada barang yang ditandai dengan nama investor.
+                      </td>
+                    </tr>
+                  ) : (
+                    investorsStats.map((inv) => {
+                      const isEditingThis = editingInvestor?.original === inv.name;
+                      return (
+                        <tr key={inv.name} className="hover:bg-gray-50 transition-colors">
+                          <td className="p-3 font-bold border-r border-gray-200">
+                            {isEditingThis ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  className="border border-black px-2 py-1 uppercase text-xs font-bold w-40"
+                                  value={editingInvestor.newName}
+                                  onChange={(e) => setEditingInvestor({ ...editingInvestor, newName: e.target.value.toUpperCase() })}
+                                  placeholder="Nama baru..."
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleRenameInvestor(inv.name, editingInvestor.newName)}
+                                  disabled={isProcessingInvestor}
+                                  className="p-1 bg-black text-white hover:bg-gray-800"
+                                  title="Simpan Perubahan"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingInvestor(null)}
+                                  className="p-1 bg-gray-200 hover:bg-gray-300"
+                                  title="Batal"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5">
+                                <span className="bg-yellow-100 border border-yellow-400 px-2 py-0.5 rounded text-yellow-900 font-bold uppercase">
+                                  {inv.name}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-3 text-center border-r border-gray-200 font-mono">
+                            <span className="font-bold">{inv.count}</span> jenis
+                          </td>
+                          <td className="p-3 text-right border-r border-gray-200 font-mono font-bold">
+                            {inv.totalStock.toLocaleString("id-ID")}
+                          </td>
+                          <td className="p-3 text-right border-r border-gray-200 font-mono text-gray-700">
+                            Rp {inv.totalAssetCost.toLocaleString("id-ID")}
+                          </td>
+                          <td className="p-3 text-right border-r border-gray-200 font-mono font-bold text-green-700">
+                            Rp {inv.totalAssetPrice.toLocaleString("id-ID")}
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedInvestorFilter(inv.name);
+                                  setIsInvestorModalOpen(false);
+                                }}
+                                className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-400 hover:bg-blue-600 hover:text-white transition-colors font-bold text-[11px] rounded-sm"
+                                title="Lihat barang-barang milik investor ini di tabel inventory"
+                              >
+                                🔍 Lihat Barang
+                              </button>
+                              <button
+                                onClick={() => setEditingInvestor({ original: inv.name, newName: inv.name })}
+                                className="px-2 py-1 bg-gray-100 text-black border border-black hover:bg-black hover:text-white transition-colors font-bold text-[11px] rounded-sm"
+                                title="Ganti nama investor ini di seluruh barang"
+                              >
+                                ✏️ Ganti Nama
+                              </button>
+                              <button
+                                onClick={() => handleUnlinkInvestor(inv.name)}
+                                disabled={isProcessingInvestor}
+                                className="px-2 py-1 bg-red-50 text-red-700 border border-red-300 hover:bg-red-600 hover:text-white transition-colors font-bold text-[11px] rounded-sm"
+                                title="Lepaskan investor ini dari barang (menjadi barang toko biasa)"
+                              >
+                                🗑️ Lepas Tag
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer / Guidance */}
+            <div className="bg-gray-50 border border-gray-300 p-3 text-xs text-gray-600 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                💡 <b>Tips:</b> Anda juga dapat mengubah atau menghapus investor pada masing-masing barang secara langsung lewat tombol <b>Edit (✏️)</b> pada baris barang.
+              </div>
+              <button
+                onClick={() => { setIsInvestorModalOpen(false); setEditingInvestor(null); }}
+                className="px-4 py-2 bg-black text-white font-bold uppercase text-xs hover:bg-gray-800 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body) : null}
 
       <div className="sticky top-0 z-40 bg-[#f8f9fa] border-b-2 border-black shadow-sm px-4 md:px-8 py-4 mb-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4">
