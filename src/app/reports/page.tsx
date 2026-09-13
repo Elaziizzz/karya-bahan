@@ -812,11 +812,11 @@ export default function ReportsPage() {
                       <div className="flex justify-between items-stretch">
                         {/* Left: Message & Tanda Terima */}
                         <div className="flex-1 max-w-[85mm] flex flex-col justify-between self-stretch pr-2 text-left">
-                          <div className="mb-2">
-                            <div className="text-[10px] font-bold uppercase tracking-wider text-black leading-tight">
+                          <div className="mb-1.5">
+                            <div className="text-[9px] font-bold uppercase tracking-wider text-black leading-tight">
                               TERIMA KASIH<br />ATAS KUNJUNGAN ANDA.
                             </div>
-                            <div className="text-[12.5px] font-black uppercase tracking-tight text-black mt-1 leading-tight font-sans">
+                            <div className="text-[10.5px] font-bold uppercase tracking-tight text-black mt-0.5 leading-tight font-sans">
                               BARANG YANG SUDAH DIBELI<br />TIDAK DAPAT DITUKAR/DIKEMBALIKAN
                             </div>
                           </div>
