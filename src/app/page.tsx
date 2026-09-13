@@ -992,15 +992,30 @@ export default function POSDashboard() {
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
                     <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[13px]">
                       <div className="flex justify-between items-stretch">
-                        <div className="text-center w-36 flex flex-col justify-between self-stretch">
-                          <p className="font-medium">Tanda Terima</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-auto py-0.5">(....................)</p>
+                        {/* Left: Message & Tanda Terima */}
+                        <div className="flex-1 max-w-[85mm] flex flex-col justify-between self-stretch pr-2 text-left">
+                          <div className="mb-2">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-black leading-tight">
+                              TERIMA KASIH<br />ATAS KUNJUNGAN ANDA.
+                            </div>
+                            <div className="text-[12.5px] font-black uppercase tracking-tight text-black mt-1 leading-tight font-sans">
+                              BARANG YANG SUDAH DIBELI<br />TIDAK DAPAT DITUKAR/DIKEMBALIKAN
+                            </div>
+                          </div>
+                          <div className="mt-auto pt-1">
+                            <p className="font-medium text-[12px]">Tanda Terima,</p>
+                            <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
+                          </div>
                         </div>
-                        <div className="text-center w-36 flex flex-col justify-between self-stretch">
-                          <p className="font-medium">Hormat Kami</p>
-                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-auto py-0.5">(....................)</p>
+
+                        {/* Center: Hormat Kami */}
+                        <div className="text-center w-32 flex flex-col justify-end self-stretch pb-0.5">
+                          <p className="font-medium text-[12px]">Hormat Kami,</p>
+                          <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
                         </div>
-                        <div className="w-56 text-right text-[13px]">
+
+                        {/* Right: Total Calculation */}
+                        <div className="w-56 text-right text-[13px] leading-snug pl-2 border-l border-gray-200 print:border-black/20">
                           <div className="flex justify-between py-0.5">
                             <span>Sub Total:</span>
                             <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
@@ -1012,23 +1027,15 @@ export default function POSDashboard() {
                           {(receiptData.paymentStatus === 'DP' || (receiptData.dpAmount && receiptData.dpAmount < receiptData.total)) && (
                             <div className="border-t border-black border-dashed mt-0.5 pt-0.5">
                               <div className="flex justify-between py-0.5 font-bold">
-                                <span>Tunai / DP:</span>
+                                <span>Uang Muka / DP:</span>
                                 <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                               </div>
-                              <div className="flex justify-between py-0.5 font-bold text-[12px] mt-0.5">
+                              <div className="flex justify-between py-0.5 font-bold text-[12px] text-red-600 print:text-black mt-0.5">
                                 <span>SISA KURANG:</span>
-                                <span>Rp {(receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
+                                <span>Rp {Math.max(0, receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                               </div>
                             </div>
                           )}
-                        </div>
-                      </div>
-                      <div className="text-center mt-1 select-none border-t border-gray-300 print:border-black pt-1 leading-tight">
-                        <div className="text-[12px] font-bold text-black uppercase tracking-wider">
-                          Terima Kasih Atas Kunjungannya
-                        </div>
-                        <div className="text-[11px] font-bold text-black tracking-tight mt-0.5">
-                          *Barang yang sudah dibeli tidak bisa dikembalikan*
                         </div>
                       </div>
                     </div>
