@@ -238,7 +238,7 @@ export default function MaterialsPage() {
     
     let finalName = formData.name;
     if (formData.hasPack && formData.packName && formData.packMultiplier) {
-      finalName = `${formData.name} - [1 ${formData.packName} = ${formData.packMultiplier} ${formData.baseUnit}]`;
+      finalName = `${formData.name} - [1 ${formData.packName} = ${formData.packMultiplier} ${formData.baseUnit} @ ${formData.packSalePrice}]`;
     } else if (formData.baseUnit && formData.baseUnit !== 'Pcs') {
       finalName = `${formData.name} - [${formData.baseUnit}]`;
     }
@@ -623,7 +623,7 @@ export default function MaterialsPage() {
                         {formData.hasPack && (
                           <div>
                             <label className="block text-[10px] font-bold mb-1 uppercase text-blue-600">Harga Jual / {formData.packName}</label>
-                            <input type="number" min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.packSalePrice} onChange={(e) => setFormData({...formData, packSalePrice: e.target.value.replace(/^0+/, '')})} placeholder="Kosong = Otomatis" />
+                            <input type="number" required min="0" className="w-full border-2 border-blue-600 p-2 text-lg font-bold" value={formData.packSalePrice} onChange={(e) => setFormData({...formData, packSalePrice: e.target.value.replace(/^0+/, '')})} placeholder="Cth: 120000" />
                           </div>
                         )}
                       </div>
