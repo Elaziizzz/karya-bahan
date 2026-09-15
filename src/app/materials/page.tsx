@@ -542,6 +542,7 @@ export default function MaterialsPage() {
                           <option value="Meter">Meter</option>
                           <option value="Roll">Roll</option>
                           <option value="Zak">Zak / Sak</option>
+                          <option value="Liter">Liter</option>
                         </select>
                       </div>
                       <div className="flex items-center pt-4">
