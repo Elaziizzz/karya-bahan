@@ -41,7 +41,7 @@ type Material = {
 
 function displayMaterialName(name: string | undefined): string {
   if (!name) return "-";
-  return name.replace(/\s*=\s*\((.*?)\)$/, '').trim();
+  return name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, '').trim();
 }
 
 export default function ReportsPage() {

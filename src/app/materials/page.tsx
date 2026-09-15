@@ -105,7 +105,7 @@ export default function MaterialsPage() {
 
     try {
       for (const mat of targetMaterials) {
-        const updatedName = mat.name.replace(/\s*=\s*\((.*?)\)$/, ` = (${newName})`);
+        const updatedName = mat.name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, ` = (${newName})`);
         const { error } = await supabase
           .from("materials")
           .update({ name: updatedName })
@@ -140,7 +140,7 @@ export default function MaterialsPage() {
 
     try {
       for (const mat of targetMaterials) {
-        const updatedName = mat.name.replace(/\s*=\s*\((.*?)\)$/, "").trim();
+        const updatedName = mat.name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, "").trim();
         const { error } = await supabase
           .from("materials")
           .update({ name: updatedName })
@@ -1044,7 +1044,7 @@ export default function MaterialsPage() {
                     <div className="flex flex-col gap-1 items-start">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold">
-                          {item.name.replace(/\s*=\s*\((.*?)\)$/, '')}
+                          {item.name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, '')}
                         </span>
                         {item.code && (
                           <span className="text-[11px] font-mono bg-gray-100 text-gray-800 border border-black px-1.5 py-0.5 rounded font-bold">

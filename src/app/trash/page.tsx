@@ -38,7 +38,7 @@ type TrashedNota = {
 
 const displayMaterialName = (name: string | undefined | null) => {
   if (!name) return "Material Terhapus";
-  return name.replace(/\s*=\s*\((.*?)\)$/, "").trim();
+  return name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, "").trim();
 };
 
 const extractInvestor = (name: string | undefined | null) => {

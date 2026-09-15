@@ -276,7 +276,7 @@ export default function RestockPage() {
                           onMouseEnter={() => setHighlightedIndex(index)}
                         >
                           <div className="flex items-center gap-2">
-                            <span>{m.name}</span>
+                            <span>{m.name.replace(/\s*@\s*\d+(?=\])/g, '').replace(/\s*=\s*\((.*?)\)$/, '')}</span>
                             {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
                           </div>
                           <div className="text-xs text-gray-500 font-mono">Stok: {m.current_stock}</div>
