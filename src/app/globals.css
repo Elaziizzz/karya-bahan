@@ -143,7 +143,7 @@ input[type=number] {
     position: static !important;
     width: 100% !important;
     max-width: 203mm !important;
-    margin: 0 auto !important;
+    margin-left: 0 !important;
     padding: 0 !important;
   }
   .receipt-page {
@@ -152,7 +152,7 @@ input[type=number] {
     min-height: 139mm !important;
     max-height: 150mm !important;
     height: auto !important;
-    margin: 0 auto !important;
+    margin-left: 0 !important;
     box-sizing: border-box !important;
   }
   .receipt-page-break {

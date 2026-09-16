@@ -913,8 +913,8 @@ export default function POSDashboard() {
         const ITEMS_PER_PAGE = 12;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[210mm] print:mx-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[210mm] print:mx-auto">
+          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[210mm] print:ml-0 print:mr-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-2 print:hidden sticky top-0 z-10">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-bold shadow-lg" title="Cetak">
@@ -934,7 +934,7 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[210mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[210mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[140mm] print:min-h-[140mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto text-black font-mono print:font-mono w-full max-w-[210mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[140mm] print:min-h-[140mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1.5">
