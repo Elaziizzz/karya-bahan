@@ -173,7 +173,7 @@ export default function MaterialsPage() {
       let packSalePrice = '';
       let investor = '';
       
-      const cleanName = item.name.replace(/\s*-\s*\[(.*?)\](?:\s*=\s*\((.*?)\))?$/, '');
+      const cleanName = item.name.replace(/\s*=\s*\((.*?)\)$/, '').replace(/\s*-\s*\[.*?\]$/, '').trim();
       const investorMatch = item.name.match(/\s*=\s*\((.*?)\)$/);
       if (investorMatch) investor = investorMatch[1].trim();
 
@@ -236,7 +236,7 @@ export default function MaterialsPage() {
     e.preventDefault();
     setLoading(true);
     
-    let finalName = formData.name;
+    let finalName = formData.name.replace(/\s*=\s*\((.*?)\)$/, '').replace(/\s*-\s*\[.*?\]$/, '').trim();
     if (formData.hasPack && formData.packName && formData.packMultiplier) {
       finalName = `${formData.name} - [1 ${formData.packName} = ${formData.packMultiplier} ${formData.baseUnit} @ ${formData.packSalePrice}]`;
     } else if (formData.baseUnit && formData.baseUnit !== 'Pcs') {
@@ -487,10 +487,14 @@ export default function MaterialsPage() {
     fetchMaterials(activeStore); // Refresh the main list
   };
 
-  const filteredMaterials = materials.filter(m => 
-    m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    m.code?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMaterials = materials.filter(m => {
+    const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          m.code?.toLowerCase().includes(searchQuery.toLowerCase());
+    if (selectedInvestorFilter === "ALL") return matchesSearch;
+    const invMatch = m.name.match(/\s*=\s*\((.*?)\)$/);
+    const matchesInvestor = invMatch && invMatch[1].trim() === selectedInvestorFilter;
+    return matchesSearch && matchesInvestor;
+  });
 
   return (
     <>
