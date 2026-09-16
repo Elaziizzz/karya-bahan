@@ -963,26 +963,26 @@ export default function POSDashboard() {
                       <table className="w-full text-left border-collapse text-[15px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
-                            <th className="py-1 font-bold w-8 text-center">NO.</th>
-                            <th className="py-1 font-bold">NAMA BARANG</th>
-                            <th className="py-1 font-bold text-right w-22">QTY</th>
-                            <th className="py-1 font-bold text-right w-22">HARGA</th>
-                            <th className="py-1 font-bold text-right w-26">JUMLAH</th>
+                            <th className="py-0.5 font-bold w-8 text-center">NO.</th>
+                            <th className="py-0.5 font-bold">NAMA BARANG</th>
+                            <th className="py-0.5 font-bold text-right w-22">QTY</th>
+                            <th className="py-0.5 font-bold text-right w-22">HARGA</th>
+                            <th className="py-0.5 font-bold text-right w-26">JUMLAH</th>
                           </tr>
                         </thead>
                         <tbody>
                           {pageItems.map((item, idx) => (
                             <tr key={idx} className="border-b border-gray-100 print:border-none">
-                              <td className="py-1 text-center align-top">{pageIdx * ITEMS_PER_PAGE + idx + 1}</td>
-                              <td className="py-1 align-top">
+                              <td className="py-0 text-center align-top">{pageIdx * ITEMS_PER_PAGE + idx + 1}</td>
+                              <td className="py-0 align-top">
                                 {displayMaterialName(item.material.name).replace(/-\s*\[.*?\]$/, '').trim()}
                                 {item.material.code ? ` [${item.material.code}]` : ''}
                               </td>
-                              <td className="py-1 text-right align-top whitespace-nowrap">
+                              <td className="py-0 text-right align-top whitespace-nowrap">
                                 {item.display_quantity} {item.display_unit.toUpperCase()}
                               </td>
-                              <td className="py-1 text-right align-top whitespace-nowrap">{item.display_price.toLocaleString("id-ID")}</td>
-                              <td className="py-1 text-right align-top font-bold whitespace-nowrap">{item.subtotal.toLocaleString("id-ID")}</td>
+                              <td className="py-0 text-right align-top whitespace-nowrap">{item.display_price.toLocaleString("id-ID")}</td>
+                              <td className="py-0 text-right align-top font-bold whitespace-nowrap">{item.subtotal.toLocaleString("id-ID")}</td>
                             </tr>
                           ))}
                         </tbody>
