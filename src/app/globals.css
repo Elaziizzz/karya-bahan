@@ -118,7 +118,7 @@ input[type=number] {
 /* Print styles for A5 Size */
 @media print {
   @page {
-    size: 148mm 210mm;
+    size: 210mm 140mm;
   }
   html, body {
     margin: 0 !important;
