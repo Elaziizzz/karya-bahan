@@ -741,11 +741,11 @@ export default function ReportsPage() {
       
       {/* Receipt Modal (Only visible when receiptData exists) */}
       {receiptData && (() => {
-        const ITEMS_PER_PAGE = 12;
+        const ITEMS_PER_PAGE = 10;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[210mm] print:ml-0 print:mr-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto">
+          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[180mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[180mm] print:mx-auto">
               <div className="flex justify-end gap-2 mb-2 print:hidden sticky top-0 z-10">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-bold shadow-lg" title="Cetak">
                   <Printer className="w-5 h-5" />
@@ -763,10 +763,10 @@ export default function ReportsPage() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto text-black font-mono print:font-mono w-full max-w-[210mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[140mm] print:min-h-[140mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[180mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[180mm] mx-auto text-[15px] leading-tight flex flex-col justify-between min-h-[96mm] print:min-h-[96mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     <div className="shrink-0 mb-1.5">
-                      <div className="flex justify-between items-start mb-1 text-[13px]">
+                      <div className="flex justify-between items-start mb-1 text-[15px]">
                         <div className="max-w-[92mm] leading-tight space-y-0.5">
                           <h2 className="text-[15.5px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
                           <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
@@ -775,9 +775,9 @@ export default function ReportsPage() {
                         </div>
                         <div className="text-center pt-0.5">
                           <h1 className="text-2xl font-bold tracking-[0.2em]">FAKTUR</h1>
-                          <div className="text-[11px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
+                          <div className="text-[13px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
                         </div>
-                        <div className="text-right text-[13px] leading-tight space-y-0.5">
+                        <div className="text-right text-[15px] leading-tight space-y-0.5">
                           <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                           <div>No. Faktur: {receiptData.invoiceNo}</div>
                           <div>Kasir     : Admin</div>
@@ -787,7 +787,7 @@ export default function ReportsPage() {
                     </div>
                     
                     <div className="flex-1 flex flex-col justify-start">
-                      <table className="w-full text-left border-collapse text-[13px]">
+                      <table className="w-full text-left border-collapse text-[15px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
                             <th className="py-1 font-bold w-8 text-center">NO.</th>
@@ -817,12 +817,12 @@ export default function ReportsPage() {
                     </div>
                     
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
-                    <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[13px]">
+                    <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[15px]">
                       <div className="flex justify-between items-stretch">
                         {/* Left: Message & Tanda Terima */}
                         <div className="flex-1 max-w-[85mm] flex flex-col justify-between self-stretch pr-2 text-left">
                           <div className="mb-1.5">
-                            <div className="text-[9px] font-bold uppercase tracking-wider text-black leading-tight">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-black leading-tight">
                               TERIMA KASIH<br />ATAS KUNJUNGAN ANDA.
                             </div>
                             <div className="text-[10.5px] font-bold uppercase tracking-tight text-black mt-0.5 leading-tight font-sans">
@@ -830,19 +830,19 @@ export default function ReportsPage() {
                             </div>
                           </div>
                           <div className="mt-auto pt-1">
-                            <p className="font-medium text-[12px]">Tanda Terima,</p>
+                            <p className="font-medium text-[14px]">Tanda Terima,</p>
                             <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
                           </div>
                         </div>
 
                         {/* Center: Hormat Kami */}
                         <div className="text-center w-32 flex flex-col justify-end self-stretch pb-0.5">
-                          <p className="font-medium text-[12px]">Hormat Kami,</p>
+                          <p className="font-medium text-[14px]">Hormat Kami,</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
                         </div>
 
                         {/* Right: Total Calculation */}
-                        <div className="w-56 text-right text-[13px] leading-snug pl-2 border-l border-gray-200 print:border-black/20">
+                        <div className="w-56 text-right text-[15px] leading-snug pl-2 border-l border-gray-200 print:border-black/20">
                           <div className="flex justify-between py-0.5">
                             <span>Sub Total:</span>
                             <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
@@ -857,7 +857,7 @@ export default function ReportsPage() {
                                 <span>Uang Muka / DP:</span>
                                 <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                               </div>
-                              <div className="flex justify-between py-0.5 font-bold text-[12px] text-red-600 print:text-black mt-0.5">
+                              <div className="flex justify-between py-0.5 font-bold text-[14px] text-red-600 print:text-black mt-0.5">
                                 <span>SISA KURANG:</span>
                                 <span>Rp {Math.max(0, receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                               </div>
@@ -1212,7 +1212,7 @@ export default function ReportsPage() {
             <div className="text-2xl font-mono font-bold text-amber-700">
               Rp <AnimatedNumber value={totalPiutang} />
             </div>
-            <div className="text-[10px] text-gray-400 mt-1 uppercase">Total tagihan DP yang belum dilunasi</div>
+            <div className="text-[12px] text-gray-400 mt-1 uppercase">Total tagihan DP yang belum dilunasi</div>
           </div>
           <div className="border-2 border-black p-6 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
             <div className="text-sm font-bold uppercase text-gray-500 mb-2 flex items-center gap-2 group-hover:text-black transition-colors">
@@ -1239,7 +1239,7 @@ export default function ReportsPage() {
               </div>
               <button 
                 onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }}
-                className="text-[10px] border border-gray-600 px-2 py-0.5 rounded hover:bg-white hover:text-black transition-colors"
+                className="text-[12px] border border-gray-600 px-2 py-0.5 rounded hover:bg-white hover:text-black transition-colors"
               >
                 Set Modal Awal
               </button>
@@ -1261,7 +1261,7 @@ export default function ReportsPage() {
                 <div className="text-3xl font-mono font-bold text-white">
                   Rp <AnimatedNumber value={currentBudget} />
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1">
+                <div className="text-[12px] text-gray-400 mt-1">
                   (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
                 </div>
               </div>
@@ -1281,7 +1281,7 @@ export default function ReportsPage() {
           <div className="text-2xl font-black text-blue-900">
             Rp {costRecovered.toLocaleString("id-ID")}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2 uppercase">Uang modal yang sudah balik dari hasil jualan</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">Uang modal yang sudah balik dari hasil jualan</div>
         </div>
         
         {/* Card 2: Keuntungan Bersih */}
@@ -1293,7 +1293,7 @@ export default function ReportsPage() {
           <div className="text-2xl font-black text-green-400">
             +Rp {realizedProfit.toLocaleString("id-ID")}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2 uppercase">Profit murni yang masuk kantong (Omzet - Modal)</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">Profit murni yang masuk kantong (Omzet - Modal)</div>
         </div>
 
         {/* Card 3: Nilai Stok Mengendap */}
@@ -1305,7 +1305,7 @@ export default function ReportsPage() {
           <div className="text-2xl font-black text-purple-800">
             Rp {totalAssetValue.toLocaleString("id-ID")}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2 uppercase">Total uang modal Anda yang nyangkut di barang</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">Total uang modal Anda yang nyangkut di barang</div>
         </div>
 
         {/* Card 4: Potensi Keuntungan */}
@@ -1317,7 +1317,7 @@ export default function ReportsPage() {
           <div className="text-2xl font-black text-yellow-600">
             +Rp {potentialProfit.toLocaleString("id-ID")}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2 uppercase">Bila semua sisa stok saat ini laku terjual</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">Bila semua sisa stok saat ini laku terjual</div>
         </div>
       </div>
 
@@ -1360,16 +1360,16 @@ export default function ReportsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex flex-col gap-1 items-start">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase ${isOut ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          <span className={`px-2 py-0.5 text-[12px] font-bold rounded uppercase ${isOut ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                             {isOut ? 'NOTA (OUT)' : 'RESTOCK (IN)'}
                           </span>
                           {isOut && (
                             isDp ? (
-                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-900 border border-amber-300">
+                              <span className="px-1.5 py-0.5 text-[12px] font-bold rounded bg-amber-100 text-amber-900 border border-amber-300">
                                 BELUM LUNAS (Sisa: Rp {sisaHutang.toLocaleString("id-ID")})
                               </span>
                             ) : (
-                              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-50 text-green-800 border border-green-200">
+                              <span className="px-1.5 py-0.5 text-[12px] font-bold rounded bg-green-50 text-green-800 border border-green-200">
                                 LUNAS
                               </span>
                             )

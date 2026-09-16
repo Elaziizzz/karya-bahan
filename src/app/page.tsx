@@ -910,11 +910,11 @@ export default function POSDashboard() {
       
       {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
       {receiptData && (() => {
-        const ITEMS_PER_PAGE = 12;
+        const ITEMS_PER_PAGE = 10;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[210mm] print:ml-0 print:mr-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto">
+          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[180mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[180mm] print:mx-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-2 print:hidden sticky top-0 z-10">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-bold shadow-lg" title="Cetak">
@@ -934,11 +934,11 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[210mm] print:ml-0 print:mr-auto text-black font-mono print:font-mono w-full max-w-[210mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[140mm] print:min-h-[140mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[180mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[180mm] mx-auto text-[15px] leading-tight flex flex-col justify-between min-h-[96mm] print:min-h-[96mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1.5">
-                      <div className="flex justify-between items-start mb-1 text-[13px]">
+                      <div className="flex justify-between items-start mb-1 text-[15px]">
                         <div className="max-w-[92mm] leading-tight space-y-0.5">
                           <h2 className="text-[15.5px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
                           <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
@@ -947,9 +947,9 @@ export default function POSDashboard() {
                         </div>
                         <div className="text-center pt-0.5">
                           <h1 className="text-2xl font-bold tracking-[0.2em]">FAKTUR</h1>
-                          <div className="text-[11px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
+                          <div className="text-[13px] mt-0.5">Hal : {pageIdx + 1} / {totalPages}</div>
                         </div>
-                        <div className="text-right text-[13px] leading-tight space-y-0.5">
+                        <div className="text-right text-[15px] leading-tight space-y-0.5">
                           <div>Tanggal   : {format(receiptData.date, "dd-MMM-yyyy HH:mm")}</div>
                           <div>No. Faktur: {receiptData.invoiceNo}</div>
                           <div>Kasir     : Admin</div>
@@ -960,7 +960,7 @@ export default function POSDashboard() {
                     
                     {/* 2. Table Area (Flex-1 fills middle, 10 items max) */}
                     <div className="flex-1 flex flex-col justify-start">
-                      <table className="w-full text-left border-collapse text-[13px]">
+                      <table className="w-full text-left border-collapse text-[15px]">
                         <thead>
                           <tr className="border-t border-b border-black border-dashed">
                             <th className="py-1 font-bold w-8 text-center">NO.</th>
@@ -990,12 +990,12 @@ export default function POSDashboard() {
                     </div>
                     
                     {/* 3. Footer (Always Pinned at Bottom, Safe with Margin: Default) */}
-                    <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[13px]">
+                    <div className="shrink-0 border-t border-black border-dashed pt-1.5 text-[15px]">
                       <div className="flex justify-between items-stretch">
                         {/* Left: Message & Tanda Terima */}
                         <div className="flex-1 max-w-[85mm] flex flex-col justify-between self-stretch pr-2 text-left">
                           <div className="mb-1.5">
-                            <div className="text-[9px] font-bold uppercase tracking-wider text-black leading-tight">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-black leading-tight">
                               TERIMA KASIH<br />ATAS KUNJUNGAN ANDA.
                             </div>
                             <div className="text-[10.5px] font-bold uppercase tracking-tight text-black mt-0.5 leading-tight font-sans">
@@ -1003,19 +1003,19 @@ export default function POSDashboard() {
                             </div>
                           </div>
                           <div className="mt-auto pt-1">
-                            <p className="font-medium text-[12px]">Tanda Terima,</p>
+                            <p className="font-medium text-[14px]">Tanda Terima,</p>
                             <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
                           </div>
                         </div>
 
                         {/* Center: Hormat Kami */}
                         <div className="text-center w-32 flex flex-col justify-end self-stretch pb-0.5">
-                          <p className="font-medium text-[12px]">Hormat Kami,</p>
+                          <p className="font-medium text-[14px]">Hormat Kami,</p>
                           <p className="whitespace-nowrap font-mono tracking-tighter text-[12.5px] select-none mt-5">(....................)</p>
                         </div>
 
                         {/* Right: Total Calculation */}
-                        <div className="w-56 text-right text-[13px] leading-snug pl-2 border-l border-gray-200 print:border-black/20">
+                        <div className="w-56 text-right text-[15px] leading-snug pl-2 border-l border-gray-200 print:border-black/20">
                           <div className="flex justify-between py-0.5">
                             <span>Sub Total:</span>
                             <span className="font-semibold">Rp {receiptData.total.toLocaleString("id-ID")}</span>
@@ -1030,7 +1030,7 @@ export default function POSDashboard() {
                                 <span>Uang Muka / DP:</span>
                                 <span>Rp {receiptData.dpAmount.toLocaleString("id-ID")}</span>
                               </div>
-                              <div className="flex justify-between py-0.5 font-bold text-[12px] text-red-600 print:text-black mt-0.5">
+                              <div className="flex justify-between py-0.5 font-bold text-[14px] text-red-600 print:text-black mt-0.5">
                                 <span>SISA KURANG:</span>
                                 <span>Rp {Math.max(0, receiptData.total - receiptData.dpAmount).toLocaleString("id-ID")}</span>
                               </div>
@@ -1044,10 +1044,10 @@ export default function POSDashboard() {
               })}
               
               {/* Print Instruction (Hidden when printing, compact details) */}
-              <details className="text-center text-xs mt-2 print:hidden text-gray-600 bg-blue-50/90 p-2 rounded border border-blue-200 max-w-[210mm] mx-auto cursor-pointer">
-                <summary className="font-bold text-blue-900 select-none">Petunjuk Cetak A5 (Klik jika perlu)</summary>
-                <div className="mt-1 space-y-0.5 text-[11px] text-blue-800 text-left px-2">
-                  <p>1. Ukuran Kertas: Pilih <b>A5/Half-Letter 210 x 140 mm</b> atau <b>A5</b>.</p>
+              <details className="text-center text-xs mt-2 print:hidden text-gray-600 bg-blue-50/90 p-2 rounded border border-blue-200 max-w-[180mm] mx-auto cursor-pointer">
+                <summary className="font-bold text-blue-900 select-none">Petunjuk Cetak Envelope C5 (Klik jika perlu)</summary>
+                <div className="mt-1 space-y-0.5 text-[13px] text-blue-800 text-left px-2">
+                  <p>1. Ukuran Kertas: Pilih <b>Envelope C5 229 x 162 mm</b> atau <b>Letter Fanfold 8 1/2 x 11 in</b>.</p>
                   <p>2. Margin: Pilih <b>Default</b> (posisi otomatis pas di tengah).</p>
                   <p>3. <b>Hilangkan centang &quot;Header dan footer&quot;</b>.</p>
                 </div>
@@ -1140,7 +1140,7 @@ export default function POSDashboard() {
                             <div className="flex items-center gap-2">
                               <span className={isOutOfStock ? 'line-through text-gray-500' : ''}>{displayMaterialName(m.name)}</span>
                               {m.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded border border-black">{m.code}</span>}
-                              {isOutOfStock && <span className="text-[10px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded shadow-sm">HABIS</span>}
+                              {isOutOfStock && <span className="text-[12px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded shadow-sm">HABIS</span>}
                             </div>
                             <div className={`text-xs font-mono ${isOutOfStock ? 'text-red-600 font-bold' : 'text-gray-500'}`}>Stock: {m.current_stock}</div>
                           </div>
@@ -1301,7 +1301,7 @@ export default function POSDashboard() {
                     >
                       <span>PELUNASAN</span>
                       {unpaidDebts.length > 0 && (
-                        <span className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black ml-1 animate-pulse">
+                        <span className="bg-red-600 text-white text-[12px] px-1.5 py-0.5 rounded-full font-black ml-1 animate-pulse">
                           {unpaidDebts.length}
                         </span>
                       )}
@@ -1405,7 +1405,7 @@ export default function POSDashboard() {
                             }}
                             placeholder="Ketik nominal uang..."
                           />
-                          <p className="text-[11px] text-gray-500 mt-1">
+                          <p className="text-[13px] text-gray-500 mt-1">
                             *Nominal tidak bisa melebihi sisa hutang (Maksimal: Rp {selectedDebt.remainingDebt.toLocaleString("id-ID")})
                           </p>
 
@@ -1467,7 +1467,7 @@ export default function POSDashboard() {
                       <div>
                         <label className="block text-xs font-bold uppercase mb-1 text-gray-700 flex items-center justify-between">
                           <span>Tanggal & Waktu Transaksi</span>
-                          <span className="text-[10px] text-blue-600 font-normal lowercase">*bisa diubah jika mencatat transaksi kemarin</span>
+                          <span className="text-[12px] text-blue-600 font-normal lowercase">*bisa diubah jika mencatat transaksi kemarin</span>
                         </label>
                         <input
                           type="datetime-local"
