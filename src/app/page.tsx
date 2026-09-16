@@ -910,11 +910,11 @@ export default function POSDashboard() {
       
       {/* Receipt Modal (Only visible when receiptData exists, and hides other content when printing) */}
       {receiptData && (() => {
-        const ITEMS_PER_PAGE = 10;
+        const ITEMS_PER_PAGE = 22;
         const totalPages = Math.max(1, Math.ceil((receiptData.items?.length || 0) / ITEMS_PER_PAGE));
         return (
-          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[180mm] print:mx-auto print:overflow-visible">
-            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[180mm] print:mx-auto">
+          <div className="receipt-modal-root fixed inset-0 z-[9999] flex items-start sm:items-center justify-center bg-black/60 overflow-y-auto p-2 sm:p-4 print:p-0 print:static print:bg-white print:z-auto print:block print:w-[148mm] print:mx-auto print:overflow-visible">
+            <div className="relative max-w-3xl w-full mx-auto my-auto print:my-0 print:max-w-none print:w-[148mm] print:mx-auto">
               {/* Action Buttons (Hidden when printing) */}
               <div className="flex justify-end gap-2 mb-2 print:hidden sticky top-0 z-10">
                 <button onClick={() => window.print()} className="px-4 py-2 bg-black text-white hover:bg-gray-800 rounded transition-colors flex items-center gap-2 font-bold shadow-lg" title="Cetak">
@@ -934,7 +934,7 @@ export default function POSDashboard() {
                   <div
                     key={pageIdx}
                     translate="no"
-                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[180mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[180mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[96mm] print:min-h-[96mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
+                    className={`notranslate receipt-page bg-white p-4 sm:p-5 pt-5 shadow-2xl relative print:shadow-none print:p-0 print:pt-0.5 print:pb-0.5 print:max-w-none print:w-[148mm] print:mx-auto text-black font-mono print:font-mono w-full max-w-[148mm] mx-auto text-[13px] leading-tight flex flex-col justify-between min-h-[210mm] print:min-h-[210mm] print:h-auto mb-3 print:mb-0 box-border ${!isLastPage ? "receipt-page-break print:break-after-page" : ""}`}
                   >
                     {/* 1. Header (Pinned at Top) */}
                     <div className="shrink-0 mb-1.5">
@@ -1044,10 +1044,10 @@ export default function POSDashboard() {
               })}
               
               {/* Print Instruction (Hidden when printing, compact details) */}
-              <details className="text-center text-xs mt-2 print:hidden text-gray-600 bg-blue-50/90 p-2 rounded border border-blue-200 max-w-[180mm] mx-auto cursor-pointer">
-                <summary className="font-bold text-blue-900 select-none">Petunjuk Cetak Envelope C5 (Klik jika perlu)</summary>
+              <details className="text-center text-xs mt-2 print:hidden text-gray-600 bg-blue-50/90 p-2 rounded border border-blue-200 max-w-[148mm] mx-auto cursor-pointer">
+                <summary className="font-bold text-blue-900 select-none">Petunjuk Cetak A5 (Klik jika perlu)</summary>
                 <div className="mt-1 space-y-0.5 text-[11px] text-blue-800 text-left px-2">
-                  <p>1. Ukuran Kertas: Pilih <b>Envelope C5 229 x 162 mm</b> atau <b>Letter Fanfold 8 1/2 x 11 in</b>.</p>
+                  <p>1. Ukuran Kertas: Pilih <b>A5 148 x 210 mm</b> atau <b>A5</b>.</p>
                   <p>2. Margin: Pilih <b>Default</b> (posisi otomatis pas di tengah).</p>
                   <p>3. <b>Hilangkan centang &quot;Header dan footer&quot;</b>.</p>
                 </div>
