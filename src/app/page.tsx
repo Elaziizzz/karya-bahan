@@ -39,6 +39,7 @@ type CartItem = {
   quantity: number;
   subtotal: number;
   display_quantity: number;
+  raw_quantity_input?: string;
   display_unit: string;
   display_price: number;
   pack_multiplier: number;
@@ -698,6 +699,25 @@ export default function POSDashboard() {
     setCart(prev => prev.map((item, i) => i === index ? { ...item, display_price: finalPrice, subtotal: finalPrice * item.display_quantity } : item)); 
   }
 
+  function updateItemQuantity(index: number, newQtyStr: string) {
+    const cleanStr = newQtyStr.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '');
+    let finalQty = Number(cleanStr.replace(/,/g, '.'));
+    if (isNaN(finalQty)) finalQty = 0;
+    
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) {
+        return { 
+           ...item, 
+           raw_quantity_input: cleanStr, 
+           display_quantity: finalQty, 
+           quantity: finalQty * item.pack_multiplier,
+           subtotal: finalQty * item.display_price 
+        };
+      }
+      return item;
+    }));
+  }
+
   function removeFromCart(index: number) {
     setCart(prev => prev.filter((_, i) => i !== index));
   }
@@ -1247,7 +1267,16 @@ export default function POSDashboard() {
                             {item.material.code && <span className="text-xs font-mono bg-white px-1 py-0.5 rounded ml-2 border border-black">{item.material.code}</span>}
                           </td>
                           <td className="p-3 text-right font-mono">
-                              <div className="text-lg">{item.display_quantity} <span className="text-xs text-gray-500">{item.display_unit}</span></div>
+                              <div className="flex items-center justify-end gap-1">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  className="w-16 bg-white border border-gray-300 px-2 py-1 text-center focus:outline-none focus:border-black rounded-none"
+                                  value={item.raw_quantity_input ?? item.display_quantity}
+                                  onChange={(e) => updateItemQuantity(index, e.target.value)}
+                                />
+                                <span className="text-xs text-gray-500">{item.display_unit}</span>
+                              </div>
                             </td>
                           <td className="p-3 text-right font-mono">
                             <div className="flex items-center justify-end gap-1">

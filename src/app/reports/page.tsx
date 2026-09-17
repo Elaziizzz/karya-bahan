@@ -990,13 +990,16 @@ export default function ReportsPage() {
                         </td>
                         <td className="p-2 text-right">
                           <input 
-                            type="number" 
-                            min="1" 
+                            type="text"
+                            inputMode="decimal"
                             className="w-16 border border-gray-400 p-1 text-right font-mono font-bold"
-                            value={item.quantity}
+                            value={(item as any).raw_quantity_input ?? item.quantity}
                             onChange={(e) => {
-                              const newQty = Math.max(1, parseInt(e.target.value) || 1);
+                              const cleanStr = e.target.value.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '');
+                              const parsed = Number(cleanStr.replace(/,/g, '.'));
+                              const newQty = isNaN(parsed) ? 0 : parsed;
                               const newItems = [...editingNota.items];
+                              (newItems[idx] as any).raw_quantity_input = cleanStr;
                               newItems[idx].quantity = newQty;
                               newItems[idx].subtotal = newQty * newItems[idx].unit_price;
                               setEditingNota({ ...editingNota, items: newItems });
