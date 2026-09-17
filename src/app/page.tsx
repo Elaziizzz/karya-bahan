@@ -58,6 +58,7 @@ export default function POSDashboard() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isStorageLoaded, setIsStorageLoaded] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -106,9 +107,12 @@ export default function POSDashboard() {
   }, [receiptData]);
 
   useEffect(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    setTransactionDate(now.toISOString().slice(0, 16));
+    // Only set default if not loaded from draft/edit
+    if (!transactionDate) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      setTransactionDate(now.toISOString().slice(0, 16));
+    }
 
     fetchData("karya_bahan");
 
@@ -135,7 +139,11 @@ export default function POSDashboard() {
   }, []);
 
   useEffect(() => {
+    if (materials.length === 0) return; // Wait until materials are loaded
+    
     const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : 'bysca_edit_cart';
+    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : 'bysca_draft_cart';
+    
     const pending = localStorage.getItem(editKey);
     if (pending) {
       try {
@@ -153,9 +161,42 @@ export default function POSDashboard() {
         console.error(e);
       } finally {
         localStorage.removeItem(editKey);
+        setIsStorageLoaded(true);
+      }
+      return;
+    }
+
+    const draft = localStorage.getItem(draftKey);
+    if (draft) {
+      try {
+        const data = JSON.parse(draft);
+        if (data && data.cart) {
+          setCart(data.cart);
+          if (data.customerName) setCustomerName(data.customerName);
+          if (data.customerPhone) setCustomerPhone(data.customerPhone);
+          if (data.paymentStatus) setPaymentMode(data.paymentStatus);
+          if (data.dpAmount) setDpAmount(String(data.dpAmount));
+          if (data.transactionDate) setTransactionDate(data.transactionDate);
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
-  }, [materials]);
+    setIsStorageLoaded(true);
+  }, [materials, activeStore]);
+
+  useEffect(() => {
+    if (!isStorageLoaded) return;
+    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : 'bysca_draft_cart';
+    localStorage.setItem(draftKey, JSON.stringify({
+      cart,
+      customerName,
+      customerPhone,
+      paymentStatus: paymentMode,
+      dpAmount,
+      transactionDate
+    }));
+  }, [cart, customerName, customerPhone, paymentMode, dpAmount, transactionDate, isStorageLoaded, activeStore]);
 
 
 
