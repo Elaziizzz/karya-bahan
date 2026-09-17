@@ -113,7 +113,7 @@ export default function RestockPage() {
 
   const selectedMaterial = materials.find(m => m.id === selectedMaterialId);
   const totalPrice = (costPrice !== "" && quantity !== "")
-    ? Number(costPrice) * Number(quantity)
+    ? Number(costPrice) * Number(quantity.replace(/,/g, '.'))
     : 0;
 
   const selectMaterial = (m: Material) => {
@@ -147,7 +147,7 @@ export default function RestockPage() {
 
         async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedMaterialId || quantity === "" || Number(quantity) <= 0 || costPrice === "" || Number(costPrice) <= 0) return;
+    if (!selectedMaterialId || quantity === "" || Number(quantity.replace(/,/g, '.')) <= 0 || costPrice === "" || Number(costPrice) <= 0) return;
 
     let multiplier = 1;
     if (selectedMaterial && buyMode === 'grosir') {
@@ -155,9 +155,9 @@ export default function RestockPage() {
       if (match) multiplier = Number(match[2]);
     }
 
-    const calculatedQty = Number(quantity) * multiplier;
+    const calculatedQty = Number(quantity.replace(/,/g, '.')) * multiplier;
     const calculatedCost = multiplier > 1 ? Math.round(Number(costPrice) / multiplier) : Number(costPrice);
-    const calculatedTotal = Number(quantity) * Number(costPrice);
+    const calculatedTotal = Number(quantity.replace(/,/g, '.')) * Number(costPrice);
 
     setLoading(true);
 
@@ -324,11 +324,14 @@ export default function RestockPage() {
                       </div>
                       <input
                         ref={qtyInputRef}
-                        type="number"
-                        min="1"
+                        type="text" inputMode="decimal"
                         className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
                         value={quantity}
-                        onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                        onChange={(e) => {
+                            let val = e.target.value.replace(/[^0-9.,]/g, '');
+                            val = val.replace(/^0+(?=\d)/, '');
+                            setQuantity(val);
+                          }}
                         placeholder={isPack && buyMode === 'grosir' ? `Berapa ${packName}?` : `Jumlah ${baseUnit}`}
                         required
                       />
@@ -343,11 +346,10 @@ export default function RestockPage() {
                   Harga Modal / Pcs (Rp)
                 </label>
                 <input
-                  type="number"
-                  min="1"
+                  type="text" inputMode="decimal"
                   className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
                   value={costPrice}
-                  onChange={(e) => setCostPrice(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  onChange={(e) => setCostPrice(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))}
                   placeholder="Contoh: 50000"
                   required
                 />
@@ -365,7 +367,7 @@ export default function RestockPage() {
 
               <button
                 type="submit"
-                disabled={loading || !selectedMaterialId || quantity === "" || Number(quantity) <= 0 || costPrice === "" || Number(costPrice) <= 0}
+                disabled={loading || !selectedMaterialId || quantity === "" || Number(quantity.replace(/,/g, '.')) <= 0 || costPrice === "" || Number(costPrice) <= 0}
                 className="w-full bg-black text-white p-4 font-bold uppercase tracking-wider hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
               >
                 {loading ? "PROCESSING..." : (
@@ -462,11 +464,10 @@ export default function RestockPage() {
             <div className="mb-4">
               <label className="block text-xs font-bold mb-1 uppercase">Quantity Baru</label>
               <input 
-                type="number" 
-                min="1"
+                type="text" inputMode="decimal"
                 className="w-full border border-black p-2 focus-ring" 
                 value={editQty} 
-                onChange={e => setEditQty(e.target.value)} 
+                onChange={e => { let val = e.target.value.replace(/[^0-9.,]/g, ''); val = val.replace(/^0+(?=\d)/, ''); setEditQty(val); }} 
               />
             </div>
             <div className="mb-6">
@@ -488,7 +489,7 @@ export default function RestockPage() {
               </button>
               <button 
                 onClick={async () => {
-                  const newQty = Number(editQty);
+                  const newQty = Number(editQty.replace(/,/g, '.'));
                   const newCost = Number(editCostPrice);
                   if(newQty <= 0) return;
                   const finalTotal = newQty * newCost;

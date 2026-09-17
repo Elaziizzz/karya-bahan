@@ -607,7 +607,7 @@ export default function POSDashboard() {
   // Inject point
   function addToCart(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!selectedMaterial || !quantity || Number(quantity) <= 0) return;
+    if (!selectedMaterial || !quantity || Number(quantity.replace(/,/g, '.')) <= 0) return;
 
     let multiplier = 1;
     let baseUnit = 'Pcs';
@@ -643,7 +643,7 @@ export default function POSDashboard() {
       }
     }
 
-    const qtyNum = Number(quantity); // user input (e.g. 3)
+    const qtyNum = Number(quantity.replace(/,/g, '.')); // user input (e.g. 3)
     const baseQtyNum = qtyNum * multiplier; // (e.g. 45)
 
     // Calculate how much of this item is ALREADY in the cart
@@ -1181,12 +1181,14 @@ export default function POSDashboard() {
                         </div>
                         <input
                           ref={quantityInputRef}
-                          type="number"
-                          min="1"
-                          max={buyMode === 'ecer' ? (selectedMaterial?.current_stock || undefined) : undefined}
+                          type="text" inputMode="decimal"
                           className="w-full border border-black p-3 bg-transparent focus-ring transition-swiss"
                           value={quantity}
-                          onChange={(e) => setQuantity(e.target.value.replace(/^0+(?=\d)/, ''))}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/[^0-9.,]/g, '');
+                            val = val.replace(/^0+(?=\d)/, '');
+                            setQuantity(val);
+                          }}
                           placeholder={isPack && buyMode === 'grosir' ? `Berapa ${packName}?` : `Jumlah ${baseUnit}`}
                           required
                         />
@@ -1203,7 +1205,7 @@ export default function POSDashboard() {
 
               <button
                 type="submit"
-                disabled={!selectedMaterialId || quantity === "" || Number(quantity) <= 0}
+                disabled={!selectedMaterialId || quantity === "" || Number(quantity.replace(/,/g, '.')) <= 0}
                 className="w-full border-2 border-black bg-white text-black p-4 font-bold uppercase tracking-wider hover:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 transition-swiss hover-elevate active-press flex justify-center items-center gap-2"
               >
                 TAMBAH KE KERANJANG
@@ -1390,9 +1392,7 @@ export default function POSDashboard() {
                             </button>
                           </div>
                           <input
-                            type="number"
-                            min="1"
-                            max={selectedDebt.remainingDebt}
+                            type="text" inputMode="decimal"
                             className="w-full p-3 border-2 border-green-600 font-mono text-2xl font-black bg-white focus:outline-none focus:ring-4 focus:ring-green-200"
                             value={pelunasanAmount}
                             onChange={(e) => {
