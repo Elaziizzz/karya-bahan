@@ -624,127 +624,157 @@ export default function ReportsPage() {
   const exportExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const sheet = workbook.addWorksheet("Laporan Laba Rugi");
+      
+      const generateSheet = (sheetName: string, transactionList: any[]) => {
+        const safeName = sheetName.replace(/[\[\]\*\?\:\/]/g, '').substring(0, 31) || "Sheet";
+        const sheet = workbook.addWorksheet(safeName);
 
-      const mapGroups: { [key: string]: any[] } = {};
-      filteredTransactions.forEach(t => {
-        const key = t.created_at || "unknown";
-        if (!mapGroups[key]) mapGroups[key] = [];
-        mapGroups[key].push(t);
-      });
-      const transactionsGrouped = Object.values(mapGroups);
+        const mapGroups: { [key: string]: any[] } = {};
+        transactionList.forEach((t: any) => {
+          const key = t.created_at || "unknown";
+          if (!mapGroups[key]) mapGroups[key] = [];
+          mapGroups[key].push(t);
+        });
+        const transactionsGrouped = Object.values(mapGroups);
 
-      sheet.columns = [
-        { key: 'no', width: 6 },
-        { key: 'date', width: 22 },
-        { key: 'type', width: 14 },
-        { key: 'customer', width: 20 },
-        { key: 'material', width: 32 },
-        { key: 'qty', width: 8 },
-        { key: 'modal', width: 16 },
-        { key: 'jual', width: 16 },
-        { key: 'total', width: 18 },
-        { key: 'profit', width: 16 }
-      ];
+        sheet.columns = [
+          { key: 'no', width: 6 },
+          { key: 'date', width: 22 },
+          { key: 'type', width: 14 },
+          { key: 'customer', width: 20 },
+          { key: 'material', width: 32 },
+          { key: 'qty', width: 8 },
+          { key: 'modal', width: 16 },
+          { key: 'jual', width: 16 },
+          { key: 'total', width: 18 },
+          { key: 'profit', width: 16 }
+        ];
 
-      const titleRow = sheet.addRow(["LAPORAN KEUANGAN & LABA RUGI - " + "Karya Bahan".toUpperCase()]);
-      titleRow.font = { name: 'Arial', size: 16, bold: true, color: { argb: "FF000000" } };
-      sheet.mergeCells('A1:J1');
-      sheet.addRow([]);
+        const titleRow = sheet.addRow(["LAPORAN KEUANGAN & LABA RUGI - " + "Karya Bahan".toUpperCase() + (sheetName === "Laporan Laba Rugi" || sheetName === "Semua Data" ? "" : " (" + sheetName + ")")]);
+        titleRow.font = { name: 'Arial', size: 16, bold: true, color: { argb: "FF000000" } };
+        sheet.mergeCells('A1:J1');
+        sheet.addRow([]);
 
-      const addBorders = (row: any) => {
-        row.eachCell({ includeEmpty: true }, (cell: any) => {
-          if (!cell.border) {
-            cell.border = {
-              top: {style:'thin', color: {argb:'FF000000'}},
-              left: {style:'thin', color: {argb:'FF000000'}},
-              bottom: {style:'thin', color: {argb:'FF000000'}},
-              right: {style:'thin', color: {argb:'FF000000'}}
-            };
-          }
+        const addBorders = (row: any) => {
+          row.eachCell({ includeEmpty: true }, (cell: any) => {
+            if (!cell.border) {
+              cell.border = {
+                top: {style:'thin', color: {argb:'FF000000'}},
+                left: {style:'thin', color: {argb:'FF000000'}},
+                bottom: {style:'thin', color: {argb:'FF000000'}},
+                right: {style:'thin', color: {argb:'FF000000'}}
+              };
+            }
+          });
+        };
+
+        const headerRow = sheet.addRow({
+          no: "NO", date: "TANGGAL", type: "TIPE", customer: "CUSTOMER", material: "NAMA BARANG", qty: "QTY", modal: "HARGA MODAL", jual: "HARGA JUAL", total: "TOTAL TRANSAKSI", profit: "PROFIT/RUGI"
+        });
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
+        headerRow.alignment = { horizontal: "center", vertical: "middle" };
+        addBorders(headerRow);
+
+        let totalRevenue = 0;
+        let totalExpense = 0;
+        let totalNetProfit = 0;
+        
+        transactionsGrouped.forEach((group, idx) => {
+          const timeStr = format(new Date(group[0].created_at), "dd MMM yyyy HH:mm");
+          const typeStr = group[0].type === "IN" ? "Restock Masuk" : "Kasir Keluar";
+          let notaTotal = 0;
+          let notaProfit = 0;
+          const isOutGroup = group[0].type === "OUT";
+          const custName = group[0].customer_name && group[0].customer_name !== '-' ? group[0].customer_name : '-';
+
+          group.forEach((item: any, itemIdx: number) => {
+            const isOut = item.type === "OUT";
+            const itemTotal = item.total_price || 0;
+            const itemModal = item.cost_price * item.quantity;
+            const profit = isOut ? (itemTotal - itemModal) : 0;
+            
+            if (isOut) {
+              totalRevenue += itemTotal;
+              totalNetProfit += profit;
+            } else {
+              totalExpense += itemTotal;
+            }
+            
+            notaTotal += itemTotal;
+            notaProfit += profit;
+
+            const row = sheet.addRow({
+              no: itemIdx === 0 ? (idx + 1) : "",
+              date: itemIdx === 0 ? timeStr : "",
+              type: itemIdx === 0 ? typeStr : "",
+              customer: itemIdx === 0 ? custName : "",
+              material: item.materials?.name || "-",
+              qty: item.quantity,
+              modal: item.cost_price,
+              jual: isOut ? (itemTotal / item.quantity) : "-",
+              total: itemTotal,
+              profit: isOut ? profit : "-"
+            });
+            
+            addBorders(row);
+            if (itemIdx === 0) {
+              const typeCell = row.getCell('type');
+              typeCell.font = { bold: true, color: { argb: isOut ? "FF047857" : "FFB91C1C" } };
+              typeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isOut ? "FFD1FAE5" : "FFFEE2E2" } };
+              typeCell.alignment = { horizontal: "center" };
+            }
+            
+            row.getCell('material').alignment = { wrapText: true };
+
+            row.getCell(7).numFmt = '"Rp" #,##0';
+            if(isOut) row.getCell(8).numFmt = '"Rp" #,##0';
+            row.getCell(9).numFmt = '"Rp" #,##0';
+            if(isOut) row.getCell(10).numFmt = '"Rp" #,##0';
+          });
+
+          const subRow = sheet.addRow({
+             no: "", date: "", type: "", customer: "", material: "SUBTOTAL NOTA:", qty: "", modal: "", jual: "", total: notaTotal, profit: isOutGroup ? notaProfit : "-"
+          });
+          subRow.font = { bold: true, color: { argb: "FF374151" } };
+          subRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCCCCCC" } };
+          addBorders(subRow);
+          
+          subRow.getCell(9).numFmt = '"Rp" #,##0';
+          if(isOutGroup) subRow.getCell(10).numFmt = '"Rp" #,##0';
+          
+          sheet.addRow({});
         });
       };
 
-      const headerRow = sheet.addRow({
-        no: "NO", date: "TANGGAL", type: "TIPE", customer: "CUSTOMER", material: "NAMA BARANG", qty: "QTY", modal: "HARGA MODAL", jual: "HARGA JUAL", total: "TOTAL TRANSAKSI", profit: "PROFIT/RUGI"
-      });
-      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0070C0" } };
-      headerRow.alignment = { horizontal: "center", vertical: "middle" };
-      addBorders(headerRow);
+      if (selectedInvestor === "Semua") {
+        generateSheet("Semua Data", filteredTransactions);
 
-      let totalRevenue = 0;
-      let totalExpense = 0;
-      let totalNetProfit = 0;
-      
-      transactionsGrouped.forEach((group, idx) => {
-        const timeStr = format(new Date(group[0].created_at), "dd MMM yyyy HH:mm");
-        const typeStr = group[0].type === "IN" ? "Restock Masuk" : "Kasir Keluar";
-        let notaTotal = 0;
-        let notaProfit = 0;
-        const isOutGroup = group[0].type === "OUT";
-        const custName = group[0].customer_name && group[0].customer_name !== '-' ? group[0].customer_name : '-';
-
-        group.forEach((item, itemIdx) => {
-          const isOut = item.type === "OUT";
-          const itemTotal = item.total_price || 0;
-          const itemModal = item.cost_price * item.quantity;
-          const profit = isOut ? (itemTotal - itemModal) : 0;
-          
-          if (isOut) {
-            totalRevenue += itemTotal;
-            totalNetProfit += profit;
-          } else {
-            totalExpense += itemTotal;
+        const investorsInFiltered = new Set<string>();
+        filteredTransactions.forEach((t: any) => {
+          if (t.materials && !t.materials.deleted_at) {
+             const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+             if (im) investorsInFiltered.add(im[1].trim());
           }
-          
-          notaTotal += itemTotal;
-          notaProfit += profit;
-
-          const row = sheet.addRow({
-            no: itemIdx === 0 ? (idx + 1) : "",
-            date: itemIdx === 0 ? timeStr : "",
-            type: itemIdx === 0 ? typeStr : "",
-            customer: itemIdx === 0 ? custName : "",
-            material: item.materials?.name || "-",
-            qty: item.quantity,
-            modal: item.cost_price,
-            jual: isOut ? (itemTotal / item.quantity) : "-",
-            total: itemTotal,
-            profit: isOut ? profit : "-"
+        });
+        
+        const uniqueInvs = Array.from(investorsInFiltered).sort();
+        uniqueInvs.forEach(inv => {
+          const invTransactions = filteredTransactions.filter((t: any) => {
+            const im = t.materials?.name?.match(/\s*=\s*\((.*?)\)$/);
+            return im && im[1].trim() === inv;
           });
-          
-          addBorders(row);
-          if (itemIdx === 0) {
-            const typeCell = row.getCell('type');
-            typeCell.font = { bold: true, color: { argb: isOut ? "FF047857" : "FFB91C1C" } };
-            typeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isOut ? "FFD1FAE5" : "FFFEE2E2" } };
-            typeCell.alignment = { horizontal: "center" };
+          if (invTransactions.length > 0) {
+            generateSheet(inv, invTransactions);
           }
-          
-          row.getCell('material').alignment = { wrapText: true };
-
-          row.getCell(7).numFmt = '"Rp" #,##0';
-          if(isOut) row.getCell(8).numFmt = '"Rp" #,##0';
-          row.getCell(9).numFmt = '"Rp" #,##0';
-          if(isOut) row.getCell(10).numFmt = '"Rp" #,##0';
         });
-
-        const subRow = sheet.addRow({
-           no: "", date: "", type: "", customer: "", material: "SUBTOTAL NOTA:", qty: "", modal: "", jual: "", total: notaTotal, profit: isOutGroup ? notaProfit : "-"
-        });
-        subRow.font = { bold: true, color: { argb: "FF374151" } };
-        subRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCCCCCC" } };
-        addBorders(subRow);
-        
-        subRow.getCell(9).numFmt = '"Rp" #,##0';
-        if(isOutGroup) subRow.getCell(10).numFmt = '"Rp" #,##0';
-        
-        sheet.addRow({});
-      });
+      } else {
+        generateSheet("Laporan Laba Rugi", filteredTransactions);
+      }
 
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Laporan_Laba_Rugi_${"Karya Bahan"}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      const filterLabel = selectedInvestor !== "Semua" ? selectedInvestor : "Semua";
+      saveAs(new Blob([buffer]), `Laporan_Laba_Rugi_Karya_Bahan_${filterLabel.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
     } catch (err: any) {
       console.error(err);
       alert("Gagal mendownload Excel: " + err.message);
