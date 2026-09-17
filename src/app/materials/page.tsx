@@ -520,8 +520,8 @@ export default function MaterialsPage() {
 
                 <div className="grid grid-cols-2 gap-4 items-start">
                     <div className="col-span-2">
-                      <label className="block text-xs font-bold mb-1 uppercase">Investor / Pemilik Barang (Opsional)</label>
-                      <input type="text" list="investor-list" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.investor || ""} onChange={(e) => setFormData({...formData, investor: e.target.value.toUpperCase()})} placeholder="Ketik atau pilih investor..." />
+                      <label className="block text-xs font-bold mb-1 uppercase">Investor / Pemilik Barang</label>
+                      <input required type="text" list="investor-list" className="w-full border border-black p-2 focus-ring transition-swiss" value={formData.investor || ""} onChange={(e) => setFormData({...formData, investor: e.target.value.toUpperCase()})} placeholder="Ketik atau pilih investor..." />
                       <datalist id="investor-list">
                         {Array.from(new Set(materials.map(m => {
                           const im = m.name.match(/\s*=\s*\((.*?)\)$/);
@@ -834,6 +834,21 @@ export default function MaterialsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+              </div>
+              <div className="relative flex-1 sm:flex-none">
+                <select
+                  className="w-full sm:w-48 border border-black p-2 bg-white focus-ring transition-swiss cursor-pointer font-bold uppercase text-sm h-full"
+                  value={selectedInvestorFilter}
+                  onChange={(e) => setSelectedInvestorFilter(e.target.value)}
+                >
+                  <option value="ALL">Semua Investor</option>
+                  {Array.from(new Set(materials.map(m => {
+                    const im = m.name.match(/\s*=\s*\((.*?)\)$/);
+                    return im ? im[1].trim() : null;
+                  }).filter(Boolean))).map(inv => (
+                    <option key={inv as string} value={inv as string}>{inv as string}</option>
+                  ))}
+                </select>
               </div>
               <button 
                 onClick={() => setShowImportSection(!showImportSection)}

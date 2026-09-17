@@ -55,6 +55,7 @@ export default function ReportsPage() {
   const [customDate, setCustomDate] = useState<string>("");
   const [customMonth, setCustomMonth] = useState<string>("");
   const [selectedInvestor, setSelectedInvestor] = useState<string>("Semua");
+  const [selectedItemFilter, setSelectedItemFilter] = useState<string>("Semua");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
@@ -409,6 +410,16 @@ export default function ReportsPage() {
     return Array.from(list).sort();
   }, [allTransactions, materials]);
 
+  const uniqueItems = useMemo(() => {
+    const list = new Set<string>();
+    allTransactions.forEach((t: any) => {
+      if (t.materials?.name) {
+        list.add(t.materials.name);
+      }
+    });
+    return Array.from(list).sort();
+  }, [allTransactions]);
+
   const filteredTransactions = useMemo(() => {
     const today = new Date();
     let result = allTransactions;
@@ -435,6 +446,10 @@ export default function ReportsPage() {
       });
     }
 
+    if (selectedItemFilter !== "Semua") {
+      result = result.filter((t: any) => t.materials?.name === selectedItemFilter);
+    }
+
     // Filter by Payment Status
     if (statusFilter === "DP") {
       result = result.filter((t: any) => t.type === "OUT" && t.payment_status === "DP");
@@ -456,7 +471,7 @@ export default function ReportsPage() {
     }
 
     return result;
-  }, [allTransactions, selectedFilter, customDate, customMonth, selectedInvestor, statusFilter, searchQuery]);
+  }, [allTransactions, selectedFilter, customDate, customMonth, selectedInvestor, selectedItemFilter, statusFilter, searchQuery]);
 
   // Group logic for UI and Exports
   const groupedTransactions = useMemo(() => {
@@ -1134,6 +1149,20 @@ export default function ReportsPage() {
                 <option value="Semua">Semua Investor</option>
                 {investors.map(inv => (
                   <option key={inv} value={inv}>{inv}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Pilih Barang</label>
+              <select 
+                value={selectedItemFilter}
+                onChange={(e) => setSelectedItemFilter(e.target.value)}
+                className="bg-transparent font-bold text-lg border-b-2 border-black focus:outline-none focus:border-blue-600 pb-1 cursor-pointer transition-swiss max-w-[200px] truncate"
+              >
+                <option value="Semua">Semua Barang</option>
+                {uniqueItems.map(item => (
+                  <option key={item} value={item}>{item.replace(/-\s*\[.*?\]\s*(=.*)?$/, '').replace(/\s*=\s*\(.*?\)$/, '').trim()}</option>
                 ))}
               </select>
             </div>
