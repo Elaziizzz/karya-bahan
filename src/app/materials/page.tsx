@@ -38,7 +38,7 @@ export default function MaterialsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', investor: '',
+  const [formData, setFormData] = useState({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', buyQtyPcs: '', packCost: '', investor: '',
     name: "", unit_info: "",
     code: "",
     cost_price: "",
@@ -160,7 +160,7 @@ export default function MaterialsPage() {
 
   function openAddModal() {
     setEditingId(null);
-    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', packCost: '', investor: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
+    setFormData({ baseUnit: 'Pcs', hasPack: false, packName: 'Pack', packMultiplier: '', packSalePrice: '', buyQty: '', buyQtyPcs: '', packCost: '', investor: '', name: '', unit_info: '', code: '', cost_price: '', price: '', current_stock: '' });
     setIsModalOpen(true);
   }
 
@@ -193,7 +193,7 @@ export default function MaterialsPage() {
       }
 
       setFormData({
-        baseUnit, hasPack, packName, packMultiplier, packSalePrice, buyQty: '', packCost: '',
+        baseUnit, hasPack, packName, packMultiplier, packSalePrice, buyQty: '', buyQtyPcs: '', packCost: '',
         name: cleanName, unit_info: '', code: item.code || '',
         cost_price: String(item.cost_price), price: String(item.price), current_stock: String(item.current_stock),
         investor
@@ -585,14 +585,28 @@ export default function MaterialsPage() {
                       
                       {(!editingId && formData.hasPack && formData.packMultiplier) ? (
                         <div className="grid grid-cols-2 gap-3 mb-3">
-                          <div>
-                            <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Beli Berapa {formData.packName}?</label>
-                            <input type="number" required min="0" className="w-full border border-black p-2 text-sm" value={formData.buyQty} onChange={(e) => {
-                              const val = e.target.value.replace(/^0+/, '');
-                              const total = Number(val) * Number(formData.packMultiplier);
-                              setFormData({...formData, buyQty: val, current_stock: String(total)});
-                            }} placeholder="Cth: 10" />
-                            <div className="text-[9px] text-gray-500 mt-1">Total: <b>{formData.current_stock || 0} {formData.baseUnit}</b></div>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Beli ({formData.packName})</label>
+                              <input type="text" inputMode="decimal" className="w-full border border-black p-2 text-sm focus:outline-none focus:ring-1 focus:ring-black transition-swiss" value={formData.buyQty} onChange={(e) => {
+                                let val = e.target.value.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '');
+                                const qPack = Number(val.replace(/,/g, '.')) || 0;
+                                const qPcs = Number(formData.buyQtyPcs.replace(/,/g, '.')) || 0;
+                                const total = (qPack * Number(formData.packMultiplier)) + qPcs;
+                                setFormData({...formData, buyQty: val, current_stock: String(total)});
+                              }} placeholder="Cth: 2" />
+                            </div>
+                            <div className="flex-1">
+                              <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Beli ({formData.baseUnit})</label>
+                              <input type="text" inputMode="decimal" className="w-full border border-black p-2 text-sm focus:outline-none focus:ring-1 focus:ring-black transition-swiss" value={formData.buyQtyPcs} onChange={(e) => {
+                                let val = e.target.value.replace(/[^0-9.,]/g, '').replace(/^0+(?=\d)/, '');
+                                const qPack = Number(formData.buyQty.replace(/,/g, '.')) || 0;
+                                const qPcs = Number(val.replace(/,/g, '.')) || 0;
+                                const total = (qPack * Number(formData.packMultiplier)) + qPcs;
+                                setFormData({...formData, buyQtyPcs: val, current_stock: String(total)});
+                              }} placeholder="Cth: 4" />
+                            </div>
+                            <div className="absolute mt-14 text-[9px] text-gray-500">Total: <b>{formData.current_stock || 0} {formData.baseUnit}</b></div>
                           </div>
                           <div>
                             <label className="block text-[10px] font-bold mb-1 uppercase text-gray-600">Harga Modal / {formData.packName}</label>
