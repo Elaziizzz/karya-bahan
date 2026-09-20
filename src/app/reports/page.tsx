@@ -481,7 +481,7 @@ export default function ReportsPage() {
     filteredTransactions.forEach((t: any) => {
       const timeKey = t.created_at; // Exact timestamp
       
-      let nota = groups.find(g => g.timeKey === timeKey && g.type === t.type);
+      let nota = groups.find(g => g.timeKey === timeKey && g.type === t.type && g.customer_name === (t.customer_name && t.customer_name !== '-' ? t.customer_name : 'Tanpa Nama'));
       if (!nota) {
         nota = {
           timeKey,
@@ -631,7 +631,7 @@ export default function ReportsPage() {
 
         const mapGroups: { [key: string]: any[] } = {};
         transactionList.forEach((t: any) => {
-          const key = t.created_at || "unknown";
+          const key = (t.created_at || "unknown") + "_" + (t.customer_name || "none");
           if (!mapGroups[key]) mapGroups[key] = [];
           mapGroups[key].push(t);
         });
