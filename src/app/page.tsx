@@ -797,6 +797,11 @@ export default function POSDashboard() {
     }
 
     const txDate = transactionDate ? new Date(transactionDate) : new Date();
+    if (transactionDate) {
+      const now = new Date();
+      txDate.setSeconds(now.getSeconds());
+      txDate.setMilliseconds(now.getMilliseconds());
+    }
     const invoiceNo = `KB-${txDate.getTime()}`;
 
     const isDp = paymentMode === "DP";
