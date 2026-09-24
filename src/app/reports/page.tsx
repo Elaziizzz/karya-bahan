@@ -709,7 +709,7 @@ export default function ReportsPage() {
               date: itemIdx === 0 ? timeStr : "",
               type: itemIdx === 0 ? typeStr : "",
               customer: itemIdx === 0 ? custName : "",
-              material: item.materials?.name || "-",
+              material: (item.materials?.name || '-').replace(/\s*@\s*\d+(?=\])/g, ''),
               qty: item.quantity,
               modal: item.cost_price,
               jual: isOut ? (itemTotal / item.quantity) : "-",
