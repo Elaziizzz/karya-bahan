@@ -37,6 +37,8 @@ type Material = {
   current_stock: number;
   cost_price: number;
   price: number;
+  deleted_at?: string | null;
+  code?: string;
 };
 
 function displayMaterialName(name: string | undefined): string {
@@ -105,15 +107,28 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchData("karya_bahan");
-    const savedBudget = localStorage.getItem(`karyabahan_initial_budget_${activeStore}`);
-    if (savedBudget) setInitialBudget(Number(savedBudget));
   }, []);
+
+  useEffect(() => {
+    const key = selectedInvestor === "Semua"
+      ? `karyabahan_initial_budget_${activeStore}`
+      : `karyabahan_initial_budget_${activeStore}_inv_${selectedInvestor}`;
+    const savedBudget = localStorage.getItem(key);
+    if (savedBudget !== null) {
+      setInitialBudget(Number(savedBudget));
+    } else {
+      setInitialBudget(0);
+    }
+  }, [selectedInvestor, activeStore]);
 
   function saveBudget(e: React.FormEvent) {
     e.preventDefault();
     const val = Number(tempBudget);
     setInitialBudget(val);
-    localStorage.setItem(`karyabahan_initial_budget_${activeStore}`, val.toString());
+    const key = selectedInvestor === "Semua"
+      ? `karyabahan_initial_budget_${activeStore}`
+      : `karyabahan_initial_budget_${activeStore}_inv_${selectedInvestor}`;
+    localStorage.setItem(key, val.toString());
     setIsEditingBudget(false);
   }
 
@@ -410,15 +425,43 @@ export default function ReportsPage() {
     return Array.from(list).sort();
   }, [allTransactions, materials]);
 
+  useEffect(() => {
+    if (selectedItemFilter !== "Semua") {
+      const match = selectedItemFilter.match(/\s*=\s*\((.*?)\)$/);
+      if (selectedInvestor !== "Semua" && match && match[1].trim() !== selectedInvestor) {
+        setSelectedItemFilter("Semua");
+      }
+    }
+  }, [selectedInvestor]);
+
   const uniqueItems = useMemo(() => {
     const list = new Set<string>();
     allTransactions.forEach((t: any) => {
       if (t.materials?.name) {
-        list.add(t.materials.name);
+        if (selectedInvestor !== "Semua") {
+          const im = t.materials.name.match(/\s*=\s*\((.*?)\)$/);
+          if (im && im[1].trim() === selectedInvestor) {
+            list.add(t.materials.name);
+          }
+        } else {
+          list.add(t.materials.name);
+        }
+      }
+    });
+    materials.forEach((m: any) => {
+      if (m.name && !m.deleted_at) {
+        if (selectedInvestor !== "Semua") {
+          const im = m.name.match(/\s*=\s*\((.*?)\)$/);
+          if (im && im[1].trim() === selectedInvestor) {
+            list.add(m.name);
+          }
+        } else {
+          list.add(m.name);
+        }
       }
     });
     return Array.from(list).sort();
-  }, [allTransactions]);
+  }, [allTransactions, materials, selectedInvestor]);
 
   const filteredTransactions = useMemo(() => {
     const today = new Date();
@@ -521,11 +564,28 @@ export default function ReportsPage() {
   // Realized Profit = Revenue - COGS
   const realizedProfit = totalSalesRevenue - costRecovered;
 
+  const filteredMaterials = useMemo(() => {
+    let result = materials.filter(m => !m.deleted_at);
+
+    if (selectedInvestor !== "Semua") {
+      result = result.filter(m => {
+        const im = m.name?.match(/\s*=\s*\((.*?)\)$/);
+        return im && im[1].trim() === selectedInvestor;
+      });
+    }
+
+    if (selectedItemFilter !== "Semua") {
+      result = result.filter(m => m.name === selectedItemFilter);
+    }
+
+    return result;
+  }, [materials, selectedInvestor, selectedItemFilter]);
+
   // Unsold Assets (Sisa Nilai Stok) = sum of (current_stock * cost_price)
-  const totalAssetValue = materials.reduce((sum, m) => sum + (m.current_stock * (m.cost_price || 0)), 0);
+  const totalAssetValue = filteredMaterials.reduce((sum, m) => sum + (m.current_stock * (m.cost_price || 0)), 0);
 
   // Potential Profit = sum of (current_stock * (price - cost_price))
-  const potentialProfit = materials.reduce((sum, m) => sum + (m.current_stock * (m.price - (m.cost_price || 0))), 0);
+  const potentialProfit = filteredMaterials.reduce((sum, m) => sum + (m.current_stock * (m.price - (m.cost_price || 0))), 0);
 
   const netBalance = totalSalesRevenue - totalPurchaseCost;
   const currentBudget = initialBudget + netBalance;
@@ -769,7 +829,7 @@ export default function ReportsPage() {
           }
         });
       } else {
-        generateSheet("Laporan Laba Rugi", filteredTransactions);
+        generateSheet(selectedInvestor, filteredTransactions);
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -1263,7 +1323,7 @@ export default function ReportsPage() {
       <div>
         <h2 className="text-2xl font-bold mb-6 border-b-2 border-black pb-2 flex items-center gap-2">
           <Wallet className="w-6 h-6" />
-          FINANCIAL SUMMARY
+          FINANCIAL SUMMARY {selectedInvestor !== "Semua" && <span className="text-blue-600">({selectedInvestor})</span>}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="border-2 border-black p-5 bg-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl">
@@ -1297,13 +1357,13 @@ export default function ReportsPage() {
           <div className="border-2 border-black p-6 bg-black text-white hover-elevate transition-swiss group shadow-[6px_6px_0_0_rgba(0,0,0,1)] rounded-xl flex flex-col justify-between">
             <div className="flex justify-between items-center mb-2">
               <div className="text-sm font-bold uppercase text-gray-400">
-                Sisa Saldo Kas (Budget)
+                Sisa Saldo Kas {selectedInvestor !== "Semua" ? `(${selectedInvestor})` : "(Budget)"}
               </div>
               <button 
                 onClick={() => { setIsEditingBudget(true); setTempBudget(initialBudget.toString()); }}
                 className="text-[12px] border border-gray-600 px-2 py-0.5 rounded hover:bg-white hover:text-black transition-colors"
               >
-                Set Modal Awal
+                Set Modal {selectedInvestor !== "Semua" ? selectedInvestor : "Awal"}
               </button>
             </div>
             {isEditingBudget ? (
@@ -1324,7 +1384,7 @@ export default function ReportsPage() {
                   Rp <AnimatedNumber value={currentBudget} />
                 </div>
                 <div className="text-[12px] text-gray-400 mt-1">
-                  (Modal: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
+                  (Modal {selectedInvestor !== "Semua" ? selectedInvestor : "Awal"}: Rp {initialBudget.toLocaleString("id-ID")} + Profit: Rp {netBalance.toLocaleString("id-ID")})
                 </div>
               </div>
             )}
@@ -1338,48 +1398,56 @@ export default function ReportsPage() {
         <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-blue-600 transition-colors">
             <DollarSign className="w-4 h-4 text-blue-600" />
-            Modal Keluar
+            Modal Keluar {selectedInvestor !== "Semua" && <span className="text-blue-600 font-bold">({selectedInvestor})</span>}
           </div>
           <div className="text-2xl font-black text-blue-900">
-            Rp {costRecovered.toLocaleString("id-ID")}
+            Rp <AnimatedNumber value={Math.round(costRecovered)} />
           </div>
-          <div className="text-[12px] text-gray-400 mt-2 uppercase">Uang modal yang sudah balik dari hasil jualan</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">
+            {selectedInvestor !== "Semua" ? `Modal ${selectedInvestor} yang sudah balik dari hasil jualan` : "Uang modal yang sudah balik dari hasil jualan"}
+          </div>
         </div>
         
         {/* Card 2: Keuntungan Bersih */}
         <div className="border border-black p-4 bg-black text-white relative overflow-hidden group hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-green-400 group-hover:animate-bounce" />
-            Keuntungan Bersih
+            Keuntungan Bersih {selectedInvestor !== "Semua" && <span className="text-green-400 font-bold">({selectedInvestor})</span>}
           </div>
           <div className="text-2xl font-black text-green-400">
-            +Rp {realizedProfit.toLocaleString("id-ID")}
+            {realizedProfit >= 0 ? "+" : ""}Rp <AnimatedNumber value={Math.round(realizedProfit)} />
           </div>
-          <div className="text-[12px] text-gray-400 mt-2 uppercase">Profit murni yang masuk kantong (Omzet - Modal)</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">
+            {selectedInvestor !== "Semua" ? `Profit murni ${selectedInvestor} yang masuk kantong (Omzet - Modal)` : "Profit murni yang masuk kantong (Omzet - Modal)"}
+          </div>
         </div>
 
         {/* Card 3: Nilai Stok Mengendap */}
         <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-purple-600 transition-colors">
             <Package className="w-4 h-4 text-purple-600" />
-            Sisa Nilai Stok (Aset)
+            Sisa Nilai Stok (Aset) {selectedInvestor !== "Semua" && <span className="text-purple-600 font-bold">({selectedInvestor})</span>}
           </div>
           <div className="text-2xl font-black text-purple-800">
-            Rp {totalAssetValue.toLocaleString("id-ID")}
+            Rp <AnimatedNumber value={Math.round(totalAssetValue)} />
           </div>
-          <div className="text-[12px] text-gray-400 mt-2 uppercase">Total uang modal Anda yang nyangkut di barang</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">
+            {selectedInvestor !== "Semua" ? `Total uang modal ${selectedInvestor} yang nyangkut di barang` : "Total uang modal Anda yang nyangkut di barang"}
+          </div>
         </div>
 
         {/* Card 4: Potensi Keuntungan */}
         <div className="border border-black p-4 bg-white relative overflow-hidden group hover:bg-gray-50 hover-elevate transition-swiss shadow-[4px_4px_0_0_rgba(0,0,0,1)] rounded-lg">
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2 group-hover:text-yellow-600 transition-colors">
             <PiggyBank className="w-4 h-4 text-yellow-600" />
-            Potensi Keuntungan
+            Potensi Keuntungan {selectedInvestor !== "Semua" && <span className="text-yellow-600 font-bold">({selectedInvestor})</span>}
           </div>
           <div className="text-2xl font-black text-yellow-600">
-            +Rp {potentialProfit.toLocaleString("id-ID")}
+            {potentialProfit >= 0 ? "+" : ""}Rp <AnimatedNumber value={Math.round(potentialProfit)} />
           </div>
-          <div className="text-[12px] text-gray-400 mt-2 uppercase">Bila semua sisa stok saat ini laku terjual</div>
+          <div className="text-[12px] text-gray-400 mt-2 uppercase">
+            {selectedInvestor !== "Semua" ? `Bila seluruh sisa stok ${selectedInvestor} saat ini laku terjual` : "Bila semua sisa stok saat ini laku terjual"}
+          </div>
         </div>
       </div>
 
