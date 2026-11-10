@@ -115,19 +115,21 @@ export default function POSDashboard() {
       setTransactionDate(now.toISOString().slice(0, 16));
     }
 
-    fetchData("karya_bahan");
+    const currentStore = getActiveStore();
+    setActiveStore(currentStore);
+    fetchData(currentStore);
 
     const materialSubscription = supabase
       .channel("public:materials")
       .on("postgres_changes", { event: "*", schema: "public", table: "materials" }, () => {
-        fetchMaterials("karya_bahan");
+        fetchMaterials(currentStore);
       })
       .subscribe();
 
     const transactionSubscription = supabase
       .channel("public:transactions")
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        fetchTransactions("karya_bahan");
+        fetchTransactions(currentStore);
       })
       .subscribe();
 
