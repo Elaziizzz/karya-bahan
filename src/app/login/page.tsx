@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { login } from "@/app/actions/auth";
-import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,7 +17,14 @@ export default function LoginPage() {
     const result = await login(formData);
 
     if (result.success) {
-      router.push("/");
+      if (result.store) {
+        try {
+          localStorage.setItem("active_store", result.store);
+        } catch (err) {
+          // ignore
+        }
+      }
+      window.location.href = "/";
     } else {
       setError(result.error || "Gagal login");
       setLoading(false);
@@ -49,7 +54,7 @@ export default function LoginPage() {
         </div>
         
         <h1 className="text-3xl font-black uppercase text-center mb-2">Karya Bahan</h1>
-        <p className="text-center text-gray-500 mb-8 font-medium">Sistem Inventori & Kasir</p>
+        <p className="text-center text-gray-500 mb-8 font-medium">Sistem Inventori & Kasir Multi-Cabang</p>
 
         {error && (
           <div className="bg-red-100 border border-red-500 text-red-700 p-3 mb-6 font-bold text-center">
@@ -59,7 +64,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold uppercase mb-2">Email</label>
+            <label className="block text-sm font-bold uppercase mb-2">Email Akun Cabang</label>
             <input 
               type="email" 
               name="email"

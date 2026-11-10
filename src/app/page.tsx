@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { getActiveStore, getStoreConfig } from "@/lib/store";
 import { format } from "date-fns";
 import { PlusCircle, ShoppingCart, ArrowDownRight, ArrowUpRight, Wallet, Trash2, Printer, X, BarChart2, Search, Clock, Edit2, User, Phone } from "lucide-react";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -77,7 +78,7 @@ export default function POSDashboard() {
   const [buyMode, setBuyMode] = useState<'ecer' | 'grosir'>('ecer');
   const [loading, setLoading] = useState(false);
 
-  const [activeStore] = useState<string>("karya_bahan");
+  const [activeStore, setActiveStore] = useState<string>(() => getActiveStore());
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { showToast } = useToast();
@@ -141,8 +142,8 @@ export default function POSDashboard() {
   useEffect(() => {
     if (materials.length === 0) return; // Wait until materials are loaded
     
-    const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : 'bysca_edit_cart';
-    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : 'bysca_draft_cart';
+    const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : `${activeStore}_edit_cart`;
+    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : `${activeStore}_draft_cart`;
     
     const pending = localStorage.getItem(editKey);
     if (pending) {
@@ -187,7 +188,7 @@ export default function POSDashboard() {
 
   useEffect(() => {
     if (!isStorageLoaded) return;
-    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : 'bysca_draft_cart';
+    const draftKey = activeStore === 'karya_bahan' ? 'karyabahan_draft_cart' : `${activeStore}_draft_cart`;
     localStorage.setItem(draftKey, JSON.stringify({
       cart,
       customerName,
@@ -837,7 +838,7 @@ export default function POSDashboard() {
             invoiceNo,
             format(txDate, "yyyy-MM-dd"),
             format(txDate, "HH:mm"),
-            activeStore === 'karya_bahan' ? 'Karya Bahan' : 'Bysca',
+            getStoreConfig(activeStore).shortName,
             'JUAL (OUT) - NOTA',
             notaItemsText,
             '1 Nota',
@@ -1006,9 +1007,9 @@ export default function POSDashboard() {
                     <div className="shrink-0 mb-1.5">
                       <div className="flex justify-between items-start mb-1 text-[15px]">
                         <div className="max-w-[92mm] leading-tight space-y-0.5">
-                          <h2 className="text-[15.5px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                          <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                          <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                          <h2 className="text-[15.5px] font-bold tracking-wider">{getStoreConfig(activeStore).name}</h2>
+                          <p>Alamat: {getStoreConfig(activeStore).address}</p>
+                          <p>Telp  : {getStoreConfig(activeStore).phone}</p>
                           <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                         </div>
                         <div className="text-center pt-0.5">

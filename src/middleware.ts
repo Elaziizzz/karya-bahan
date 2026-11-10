@@ -14,6 +14,13 @@ export function middleware(request: NextRequest) {
   if (isAuthenticated && isLoginPage) {
     return NextResponse.redirect(new URL('/', request.url))
   }
+
+  // Safeguard: Ensure store cookie is set if authenticated
+  if (isAuthenticated && !request.cookies.has('store')) {
+    const response = NextResponse.next()
+    response.cookies.set('store', 'karya_bahan', { path: '/' })
+    return response
+  }
   
   return NextResponse.next()
 }
@@ -30,5 +37,3 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
-
-

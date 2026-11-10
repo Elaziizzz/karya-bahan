@@ -3,9 +3,19 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, PackagePlus, Box, BarChart2, Trash2, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getActiveStore, getStoreConfig } from '@/lib/store';
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [storeId, setStoreId] = useState("karya_bahan");
+
+  useEffect(() => {
+    setStoreId(getActiveStore());
+  }, []);
+
+  const config = getStoreConfig(storeId);
+  const isBranch2 = storeId === "karya_bahan_02";
   
   const isActive = (path: string) => {
     return pathname === path ? "bg-black text-white px-4 py-2 font-bold translate-x-2 shadow-[4px_4px_0_0_#3b82f6] rounded-md" : "text-gray-500 hover:text-black hover:bg-gray-50 px-4 py-2 font-medium hover:translate-x-1";
@@ -19,14 +29,27 @@ export function Sidebar() {
     <>
       {/* Mobile Top Header */}
       <div className="print:hidden md:hidden w-full bg-white border-b-2 border-black p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
-        <h1 className="text-xl font-black tracking-tighter uppercase text-black">KARYA BAHAN <span className="text-blue-600">JAYA PLAVON</span></h1>
+        <h1 className="text-xl font-black tracking-tighter uppercase text-black">
+          KARYA BAHAN <span className={isBranch2 ? "text-emerald-600" : "text-blue-600"}>{isBranch2 ? "CABANG 2" : "JAYA PLAVON"}</span>
+        </h1>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border border-black ${isBranch2 ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
+          {config.badge}
+        </span>
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="print:hidden w-64 min-h-screen border-r border-black flex-col justify-between bg-white relative hidden md:flex transition-all duration-300">
         <div className="p-8 pb-4">
           <div className="mb-8 border-b-4 border-black pb-4">
-            <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words group cursor-default">KARYA BAHAN <span className="text-blue-600 transition-colors group-hover:text-black">JAYA PLAVON</span></h1><div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Toko Material & Bangunan</div>
+            <h1 className="text-3xl font-black tracking-tighter uppercase leading-tight mb-2 text-black break-words group cursor-default">
+              KARYA BAHAN <span className={`${isBranch2 ? "text-emerald-600" : "text-blue-600"} transition-colors group-hover:text-black`}>{isBranch2 ? "CABANG 2" : "JAYA PLAVON"}</span>
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-black ${isBranch2 ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"}`}>
+                {config.badge}
+              </span>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">Material & Bangunan</div>
+            </div>
           </div>
 
           <nav className="flex flex-col gap-2">
@@ -52,7 +75,7 @@ export function Sidebar() {
         </div>
         <div className="p-8 pt-4 border-t border-gray-200">
           <div className="text-xs font-mono uppercase tracking-widest text-gray-500">
-            v1.0.0 &copy; {new Date().getFullYear()}
+            {config.badge} &bull; v1.0.0
           </div>
         </div>
       </aside>
@@ -79,6 +102,3 @@ export function Sidebar() {
     </>
   );
 }
-
-
-

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { getActiveStore, getStoreConfig } from "@/lib/store";
 import { format } from "date-fns";
 import { 
   FileText, Clock, Download, Calendar, Trash2, TrendingUp, DollarSign, 
@@ -50,7 +51,7 @@ export default function ReportsPage() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeStore] = useState("karya_bahan");
+  const [activeStore, setActiveStore] = useState<string>(() => getActiveStore());
   
   // Filter state
   const [selectedFilter, setSelectedFilter] = useState<string>("TODAY");
@@ -106,7 +107,9 @@ export default function ReportsPage() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
-    fetchData("karya_bahan");
+    const store = getActiveStore();
+    setActiveStore(store);
+    fetchData(store);
   }, []);
 
   useEffect(() => {
@@ -339,7 +342,7 @@ export default function ReportsPage() {
         };
       });
 
-      const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : 'bysca_edit_cart';
+      const editKey = activeStore === 'karya_bahan' ? 'karyabahan_edit_cart' : `${activeStore}_edit_cart`;
       localStorage.setItem(editKey, JSON.stringify({
         cart: cartItems,
         customerName: editingNota.customer_name,
@@ -873,9 +876,9 @@ export default function ReportsPage() {
                     <div className="shrink-0 mb-1.5">
                       <div className="flex justify-between items-start mb-1 text-[15px]">
                         <div className="max-w-[92mm] leading-tight space-y-0.5">
-                          <h2 className="text-[15.5px] font-bold tracking-wider">{activeStore === 'karya_bahan' ? 'KARYA BAHAN JAYA PLAVON' : 'BYSCA'}</h2>
-                          <p>Alamat: {activeStore === 'karya_bahan' ? 'Jl.Raya Barat No.6 Kasturi Cikijing,Majalengka' : '-'}</p>
-                          <p>Telp  : {activeStore === 'karya_bahan' ? '081323299754 / 085722328871' : '-'}</p>
+                          <h2 className="text-[15.5px] font-bold tracking-wider">{getStoreConfig(activeStore).name}</h2>
+                          <p>Alamat: {getStoreConfig(activeStore).address}</p>
+                          <p>Telp  : {getStoreConfig(activeStore).phone}</p>
                           <p className="mt-0.5">Customer: <b>{receiptData.customerName || "-"}</b> {receiptData.customerPhone && receiptData.customerPhone !== '-' ? `(${receiptData.customerPhone})` : ''}</p>
                         </div>
                         <div className="text-center pt-0.5">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { getActiveStore } from "@/lib/store";
 import { format, differenceInDays } from "date-fns";
 import { Trash2, RefreshCcw, AlertTriangle, Calendar, Clock, User, Package } from "lucide-react";
 
@@ -51,10 +52,12 @@ export default function TrashPage() {
   const [trashed, setTrashed] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [activeStore] = useState("karya_bahan");
+  const [activeStore, setActiveStore] = useState<string>(() => getActiveStore());
 
   useEffect(() => {
-    fetchAndCleanTrash("karya_bahan");
+    const store = getActiveStore();
+    setActiveStore(store);
+    fetchAndCleanTrash(store);
   }, []);
 
   async function fetchAndCleanTrash(store: string) {

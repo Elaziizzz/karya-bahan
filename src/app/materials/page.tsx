@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { getActiveStore, getStoreConfig } from "@/lib/store";
 import { Package, User, Users, Plus, Search, Edit2, Trash2, Check, X, Upload, Zap, FileSpreadsheet, Image as ImageIcon, CheckCircle2, AlertCircle, XCircle, ArrowRight, Save } from "lucide-react";
 import * as XLSX from "xlsx";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -33,7 +34,7 @@ type ImportRow = {
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeStore] = useState<string>("karya_bahan");
+  const [activeStore, setActiveStore] = useState<string>(() => getActiveStore());
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { showToast } = useToast();
@@ -217,7 +218,9 @@ export default function MaterialsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchMaterials("karya_bahan");
+    const store = getActiveStore();
+    setActiveStore(store);
+    fetchMaterials(store);
   }, []);
 
   async function fetchMaterials(store: string) {

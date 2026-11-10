@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { getActiveStore, getStoreConfig } from "@/lib/store";
 import { format } from "date-fns";
 import { createPortal } from "react-dom";
 import { Package, PlusCircle, Trash2 } from "lucide-react";
@@ -49,11 +50,13 @@ export default function RestockPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
-  const activeStore = "karya_bahan";
+  const [activeStore, setActiveStore] = useState<string>(() => getActiveStore());
 
   useEffect(() => {
-    fetchMaterials();
-    fetchRecentRestocks();
+    const store = getActiveStore();
+    setActiveStore(store);
+    fetchMaterials(store);
+    fetchRecentRestocks(store);
 
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -86,15 +89,17 @@ export default function RestockPage() {
     }
   }, [highlightedIndex]);
 
-  async function fetchMaterials() {
+  async function fetchMaterials(storeParam?: string) {
+    const s = storeParam || activeStore;
     const { data } = await supabase
       .from("materials")
       .select("*")
-      .eq("store", activeStore).is("deleted_at", null).order("name");
+      .eq("store", s).is("deleted_at", null).order("name");
     if (data) setMaterials(data);
   }
 
-  async function fetchRecentRestocks() {
+  async function fetchRecentRestocks(storeParam?: string) {
+    const s = storeParam || activeStore;
     const { data } = await supabase
       .from("transactions")
       .select("*, materials(name, code)")
